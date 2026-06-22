@@ -3,12 +3,17 @@
 
 import { supabase } from '../supabase';
 
-export async function listPrograms() {
-  const { data, error } = await supabase
+export async function listPrograms({ includeArchived = false } = {}) {
+  let query = supabase
     .from('programs')
-    .select('id, name, org_id, created_at, organizations(name)')
+    .select('id, name, status, org_id, created_at, archived_at, organizations(name)')
     .order('created_at', { ascending: false });
 
+  if (!includeArchived) {
+    query = query.eq('status', 'active');
+  }
+
+  const { data, error } = await query;
   if (error) throw error;
   return data;
 }
@@ -16,7 +21,7 @@ export async function listPrograms() {
 export async function getProgram(programId) {
   const { data, error } = await supabase
     .from('programs')
-    .select('id, name, org_id, created_at, organizations(name)')
+    .select('id, name, status, org_id, created_at, archived_at, organizations(name)')
     .eq('id', programId)
     .single();
 
@@ -24,21 +29,6 @@ export async function getProgram(programId) {
   return data;
 }
 
-/**
- * Creates a program for an org and copies the stock 13-module / 149-task
- * curriculum into the program's own modules/tasks tables.
- *
- * This calls the provision_program Postgres function (see
- * supabase/migrations/008_provision_program_rpc.sql) rather than doing
- * the insert + copy as separate client calls, so the whole operation
- * is one atomic transaction — no risk of a program ending up with a
- * partial or missing curriculum if something fails midway.
- *
- * Throws if the org already has a program (programs.org_id is UNIQUE)
- * or if the caller isn't a super admin.
- *
- * @returns {Promise<string>} the new program's id
- */
 export async function provisionProgram({ orgId, programName }) {
   const { data, error } = await supabase.rpc('provision_program', {
     p_org_id: orgId,
@@ -46,7 +36,7 @@ export async function provisionProgram({ orgId, programName }) {
   });
 
   if (error) throw error;
-  return data; // uuid of the new program
+  return data;
 }
 
 export async function updateProgram(programId, { name }) {
@@ -61,24 +51,30 @@ export async function updateProgram(programId, { name }) {
   return data;
 }
 
-/**
- * Deleting a program cascades to its modules/tasks/residents/etc.
- * Destructive — confirm with the user before calling.
- */
-export async function deleteProgram(programId) {
-  const { error } = await supabase
+export async function archiveProgram(programId) {
+  const { data, error } = await supabase
     .from('programs')
-    .delete()
-    .eq('id', programId);
+    .update({ status: 'archived' })
+    .eq('id', programId)
+    .select()
+    .single();
 
   if (error) throw error;
+  return data;
 }
 
-/**
- * Curriculum preview: modules with their tasks, ordered, for a given
- * program. Used by both the Super Admin program detail view and the
- * Program Admin's Curriculum page.
- */
+export async function unarchiveProgram(programId) {
+  const { data, error } = await supabase
+    .from('programs')
+    .update({ status: 'active' })
+    .eq('id', programId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
 export async function getProgramCurriculum(programId) {
   const { data, error } = await supabase
     .from('modules')
@@ -94,8 +90,6 @@ export async function getProgramCurriculum(programId) {
 
   if (error) throw error;
 
-  // Sort tasks within each module by order_index (nested select doesn't
-  // guarantee child ordering)
   return data.map((mod) => ({
     ...mod,
     tasks: [...mod.tasks].sort((a, b) => a.order_index - b.order_index),

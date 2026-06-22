@@ -1,8 +1,10 @@
 // src/pages/superadmin/ProgramsPage.jsx
 import { useEffect, useState } from 'react';
-import { listPrograms, deleteProgram } from '../../lib/api/programs';
+import { listPrograms } from '../../lib/api/programs';
 import { listOrganizations } from '../../lib/api/organizations';
 import CreateProgramModal from '../../components/modals/CreateProgramModal';
+import EditProgramModal from '../../components/modals/EditProgramModal';
+import ArchiveProgramModal from '../../components/modals/ArchiveProgramModal';
 import AppLayout from '../../components/layout/AppLayout';
 
 export default function ProgramsPage() {
@@ -11,6 +13,8 @@ export default function ProgramsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingProgram, setEditingProgram] = useState(null);
+  const [archivingProgram, setArchivingProgram] = useState(null);
 
   async function refresh() {
     setLoading(true);
@@ -21,8 +25,6 @@ export default function ProgramsPage() {
         listOrganizations(),
       ]);
       setPrograms(programsData);
-      // programs.org_id is UNIQUE — only orgs with zero programs are
-      // eligible for the "create program" flow
       setOrgsWithoutProgram(orgsData.filter((org) => !org.programs?.length));
     } catch (err) {
       setError(err.message || 'Failed to load programs');
@@ -40,18 +42,14 @@ export default function ProgramsPage() {
     refresh();
   }
 
-  async function handleDelete(program) {
-    const confirmed = window.confirm(
-      `Delete "${program.name}"? This removes all of its modules, tasks, residents, and records. This cannot be undone.`
-    );
-    if (!confirmed) return;
+  function handleSaved() {
+    setEditingProgram(null);
+    refresh();
+  }
 
-    try {
-      await deleteProgram(program.id);
-      refresh();
-    } catch (err) {
-      alert(err.message || 'Failed to delete program');
-    }
+  function handleArchived() {
+    setArchivingProgram(null);
+    refresh();
   }
 
   return (
@@ -110,12 +108,20 @@ export default function ProgramsPage() {
                     {new Date(program.created_at).toLocaleDateString()}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button
-                      onClick={() => handleDelete(program)}
-                      className="text-sm font-medium text-red-600 hover:text-red-700"
-                    >
-                      Delete
-                    </button>
+                    <div className="flex justify-end gap-3">
+                      <button
+                        onClick={() => setEditingProgram(program)}
+                        className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => setArchivingProgram(program)}
+                        className="text-sm font-medium text-red-600 hover:text-red-700"
+                      >
+                        Archive
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -129,6 +135,22 @@ export default function ProgramsPage() {
           organizations={orgsWithoutProgram}
           onClose={() => setShowCreateModal(false)}
           onCreated={handleCreated}
+        />
+      )}
+
+      {editingProgram && (
+        <EditProgramModal
+          program={editingProgram}
+          onClose={() => setEditingProgram(null)}
+          onSaved={handleSaved}
+        />
+      )}
+
+      {archivingProgram && (
+        <ArchiveProgramModal
+          program={archivingProgram}
+          onClose={() => setArchivingProgram(null)}
+          onArchived={handleArchived}
         />
       )}
     </AppLayout>

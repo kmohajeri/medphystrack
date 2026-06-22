@@ -7,6 +7,8 @@ import ResetPasswordPage from './pages/ResetPasswordPage'
 import SuperAdminDashboard from './pages/dashboards/SuperAdminDashboard'
 import ProgramAdminDashboard from './pages/dashboards/ProgramAdminDashboard'
 import ResidentDashboard from './pages/dashboards/ResidentDashboard'
+import OrganizationsPage from './pages/superadmin/OrganizationsPage'
+import ProgramsPage from './pages/superadmin/ProgramsPage'
 
 function RootRedirect() {
   const { session, profile, loading } = useAuth()
@@ -48,6 +50,22 @@ export default function App() {
             element={
               <ProtectedRoute allowedRole="super_admin">
                 <SuperAdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/super-admin/organizations"
+            element={
+              <ProtectedRoute allowedRole="super_admin">
+                <OrganizationsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/super-admin/programs"
+            element={
+              <ProtectedRoute allowedRole="super_admin">
+                <ProgramsPage />
               </ProtectedRoute>
             }
           />

@@ -38,6 +38,16 @@ resident progress, manage steering committee records, and handle resident applic
 
 ---
 
+## Deployment
+- Hosted on Vercel, connected to GitHub repo (kmohajeri/medphystrack)
+- Live at medphystrack.com (and www.medphystrack.com)
+- Auto-deploys on push to main branch
+- Environment variables (VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY) set in Vercel project settings
+- Supabase redirect URLs configured for localhost and production domains
+
+## Multi-Tenancy Model
+...
+
 ## Multi-Tenancy Model
 
 - Single URL login (no subdomains) — org is determined after authentication
@@ -87,6 +97,62 @@ Organization
 - Status options: Not Started / In Progress / Completed / Not Applicable
 - Resident marks their own tasks complete
 - Tasks are not quantitative (no case counts required)
+
+---
+
+## Curriculum Seed Data — COMPLETE (2026-06-21)
+
+`template_modules` and `template_tasks` are fully populated with the
+13-module stock CAMPEP curriculum, synthesized from four residency
+handbooks (Harvard, Johns Hopkins, Spectrum Medical Physics, BayCare
+Morton Plant Hospital / Lykes Radiation Pavilion).
+
+**13 modules, 149 tasks total:**
+
+| # | Module | Tasks | Year |
+|---|---|---|---|
+| 1 | Orientation & Clinical Integration | 9 | 1 |
+| 2 | Ethics & Professionalism | 3 | 1 |
+| 3 | Imaging for Simulation, Planning & Treatment Verification | 15 | 1 |
+| 4 | Dosimetric Systems | 11 | 1 |
+| 5 | Safety in Radiation Oncology | 9 | 1 |
+| 6 | Treatment Planning 1 | 13 | 1 |
+| 7 | Treatment Planning 2 | 12 | 1 |
+| 8 | LINAC Commissioning and QA | 14 | 1 |
+| 9 | TPS Modeling, Commissioning, and QA | 11 | 2 |
+| 10 | Radiation Protection and Shielding | 12 | 2 |
+| 11 | Brachytherapy | 17 | 2 |
+| 12 | Special Procedures | 14 | 2 |
+| 13 | Physicist of the Day / Research | 9 | 2 |
+
+Each task has `task_type` of either `clinical` or `reading`. Most modules
+end with a standard "concluding presentation" clinical task — Module 13 is
+the exception (its research defense and final oral exam tasks serve that role).
+
+This is the **stock/master copy only** — what gets copied into a new program's
+`modules`/`tasks` tables on provisioning (Phase 4, not yet built). No actual
+program has been provisioned yet; `modules` and `tasks` are currently empty.
+
+### Known content decisions
+
+- **HDR breast brachytherapy excluded from Module 11** — replaced clinically
+  by external beam ultra-hypofractionated protocols (e.g. FAST-Forward) at the
+  reference institution. This is a deliberate clinical-practice decision, not an
+  oversight.
+- **Textbook chapter numbers only added when confirmed** — two recurring texts:
+  *Primer on Radiation Oncology Physics* (Eric Ford) and *Practical Radiation
+  Oncology Physics* (Sonja Dieterich). Chapter numbers were verified against
+  source material or published TOCs (e.g. Primer Ch. 18 = "Quality Assurance,"
+  confirmed via Routledge). Never guessed. Some modules intentionally have no
+  textbook reading task where no chapter could be confirmed (e.g. Module 10 has
+  no *Practical Radiation Oncology Physics* reading).
+- **ABS guidelines included in Module 11** — readings reference American
+  Brachytherapy Society consensus guidelines for HDR cervical and HDR prostate
+  brachytherapy, added based on actual case types at the reference institution
+  (including via its Moffitt Cancer Center affiliation).
+
+**Next step:** Phase 4 — Program Management admin UI so a Program Director can
+review and customize the copied curriculum after a new program is provisioned.
 
 ---
 
@@ -164,6 +230,10 @@ Organization
 - **Target market** — CAMPEP-accredited medical physics residency programs (~200 in US)
 - **Pricing target** — ~$199/month per program
 - **Buyer persona** — Program Director (not hospital IT or administrator)
+- **Onboarding model (Option A)** — Super Admin creates the Organization and 
+  Residency Program first (curriculum template copies automatically), then 
+  creates the Program Admin account linked via org_id. Program Admin's first 
+  login lands in an already-configured workspace, not a blank slate.
 
 ---
 
@@ -222,7 +292,16 @@ RESEND_API_KEY=
 
 ## Database Schema
 
-Migration files: `supabase/migrations/001_initial_schema.sql` and `002_rls_policies.sql`
+Migration files: `supabase/migrations/`
+- `001_initial_schema.sql` — 18 tables with indexes and triggers
+- `002_rls_policies.sql` — RLS enabled with role-based policies
+- `003_curriculum_template_fields.sql` — adds duration_weeks, year to template_modules; cases_required to template_tasks; tightens task_type CHECK to ('clinical', 'reading')
+- `004_mirror_fields_to_program_tables.sql` — mirrors duration_weeks, year onto modules; cases_required onto tasks; tightens task_type CHECK on tasks to ('clinical', 'reading')
+- `005_module_evaluation_workflow.sql` — revamps module_evaluations columns (booleans, oral_exam_score text, renamed comments), adds evaluation_files table, adds started_at/completed_at to resident_modules
+- `006_evaluation_files_storage.sql` — creates evaluation-files Storage bucket and its RLS policies
+- `007_programs_org_id_unique.sql` — adds UNIQUE constraint on programs.org_id (1:1 org-to-program invariant)
+
+Status: Live in Supabase project fmwyajlsckmgjtclnypq
 
 | Table | Purpose |
 |---|---|
@@ -230,7 +309,7 @@ Migration files: `supabase/migrations/001_initial_schema.sql` and `002_rls_polic
 | `profiles` | Extends `auth.users` — role + org assignment |
 | `programs` | Residency programs within an org |
 | `template_modules` | Super-admin-managed default curriculum modules |
-| `template_tasks` | Tasks inside template modules (clinical or didactic) |
+| `template_tasks` | Tasks inside template modules (clinical or reading) |
 | `modules` | Program-owned copy of template modules |
 | `tasks` | Program-owned copy of template tasks |
 | `residents` | Resident records, linked to `auth.users` via `user_id` |
@@ -243,22 +322,106 @@ Migration files: `supabase/migrations/001_initial_schema.sql` and `002_rls_polic
 | `committee_minutes` | Meeting minutes |
 | `minutes_members` | Join table: members ↔ meetings |
 | `minutes_files` | File attachments on meeting minutes |
-| `module_evaluations` | Faculty evaluation per resident per module |
+| `module_evaluations` | Faculty evaluation per resident per module (oral exam + sign-off workflow) |
+| `evaluation_files` | File uploads per evaluation (presentation + supplementary docs) |
+
+### template_modules / modules — extra columns (beyond id / name / description / order_index / timestamps)
+| Column | Type | Notes |
+|---|---|---|
+| `duration_weeks` | integer, nullable | Approx rotation length in weeks |
+| `year` | integer, nullable | Training year (1 or 2); orientation counts as year 1 |
+
+Both `template_modules` and `modules` carry these columns. On provisioning, `modules` values are copied from the template; editable per-program thereafter.
+
+### template_tasks / tasks — extra columns (beyond id / module_id / name / description / resource_url / is_required / order_index / timestamps)
+| Column | Type | Notes |
+|---|---|---|
+| `task_type` | text, not null | `'clinical'` or `'reading'` — CHECK constraint on both tables |
+| `cases_required` | integer, nullable | Case count for clinical tasks; null for reading tasks |
+
+Both `template_tasks` and `tasks` carry these columns and the same `task_type` CHECK. On provisioning, `tasks` values are copied from the template; editable per-program thereafter.
+
+### Module Evaluation Workflow (migrations 005–007, added 2026-06-21)
+
+The module-concluding presentation/oral exam workflow (resident presents, faculty
+conducts oral exam, both parties electronically sign off) is supported by schema
+changes to `module_evaluations`, `resident_modules`, and a new `evaluation_files`
+table + Storage bucket.
+
+#### `module_evaluations` — changed columns
+
+| Column | Old type | New type | Notes |
+|---|---|---|---|
+| `competencies_score` | integer (1-5 CHECK) | boolean | Yes/No: were all module competencies completed? |
+| `reading_score` | integer (1-5 CHECK) | boolean | Yes/No: were all reading assignments completed? |
+| `engagement_score` | integer (1-5 CHECK) | *(dropped)* | Replaced by `engaged_with_mentors_staff` |
+| `oral_exam_score` | integer (1-5 CHECK) | text (CHECK) | `'pass'` \| `'conditional_pass'` \| `'fail'` |
+| `comments` | text | *(renamed)* | Renamed to `faculty_comments` |
+
+#### `module_evaluations` — new columns
+
+| Column | Type | Notes |
+|---|---|---|
+| `engaged_with_mentors_staff` | boolean | Combined engagement + mentor-interaction question |
+| `resident_comments` | text | Resident's own comments, separate from `faculty_comments` |
+
+Unchanged: `id`, `resident_id` (→ `residents.id`), `module_id`, `resident_module_id`,
+`faculty_id` (→ `auth.users.id`), `faculty_signed_at`, `resident_acknowledged_at`,
+`status` (CHECK: `'pending'` | `'approved'`), `created_at`, `updated_at`.
+
+#### `resident_modules` — new columns
+
+| Column | Type | Notes |
+|---|---|---|
+| `started_at` | timestamptz, nullable | |
+| `completed_at` | timestamptz, nullable | |
+
+#### New table: `evaluation_files`
+
+Mirrors the `application_files` pattern. Supports multiple files per evaluation
+(required presentation + optional supplementary docs), uploaded by the resident.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | uuid PK | |
+| `evaluation_id` | uuid FK | → `module_evaluations.id`, ON DELETE CASCADE |
+| `file_type` | text (CHECK) | `'presentation'` \| `'supplementary'` |
+| `file_name` | text | |
+| `storage_path` | text | Path into the `evaluation-files` Storage bucket |
+| `uploaded_by` | uuid FK | → `profiles.id` (the logged-in resident) |
+| `created_at` | timestamptz | |
+
+#### New Storage bucket: `evaluation-files`
+
+Private bucket. Path convention: `{program_id}/{resident_id}/{evaluation_id}/{filename}`
+(`resident_id` = `residents.id`, **not** `auth.uid()`; RLS resolves the requesting user
+via `residents.user_id`).
+
+Access model (Storage RLS on `storage.objects`):
+- **Resident**: full CRUD on their own files, but only while `module_evaluations.faculty_signed_at IS NULL` (locked after faculty sign-off).
+- **Program Admin**: SELECT + DELETE on files belonging to their program (via `profiles.org_id → programs.org_id`). No upload access.
+- **Super Admin**: full access.
+
+#### Schema invariant: one program per organization
+
+`programs.org_id` has a `UNIQUE` constraint (`programs_org_id_unique`). This is a
+confirmed product decision. Several RLS policies (including Storage policies above)
+depend on this constraint for program-scoping logic to be safe. Do not relax it
+without revisiting those policies.
+
+Migration application order note: 006 was applied before 005 in practice (no
+functional issue — 006 only references pre-existing tables), but the intended
+order is 005 → 007 → 006.
 
 **Helper functions:** `get_my_role()`, `get_my_org_id()` (used in RLS policies)
 **Trigger:** `handle_new_user()` auto-creates a profile row on signup
 **Trigger:** `set_updated_at()` keeps `updated_at` current on all tables
 
-Schema created via Supabase migrations:
-- 001_initial_schema.sql — 18 tables with indexes and triggers
-- 002_rls_policies.sql — RLS enabled with role-based policies
-Status: Live in Supabase project fmwyajlsckmgjtclnypq
-
 Tables: organizations, programs, modules, tasks, residents,
 resident_modules, resident_tasks, applications, application_files,
 inquiry_logs, committee_members, committee_minutes, minutes_files,
-minutes_members, module_evaluations, profiles, template_modules,
-template_tasks
+minutes_members, module_evaluations, evaluation_files, profiles,
+template_modules, template_tasks
 ---
 
 ## File Structure

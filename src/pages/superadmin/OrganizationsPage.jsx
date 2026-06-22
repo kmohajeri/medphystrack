@@ -1,7 +1,9 @@
 // src/pages/superadmin/OrganizationsPage.jsx
 import { useEffect, useState } from 'react';
-import { listOrganizations, deleteOrganization } from '../../lib/api/organizations';
+import { listOrganizations } from '../../lib/api/organizations';
 import CreateOrganizationModal from '../../components/modals/CreateOrganizationModal';
+import EditOrganizationModal from '../../components/modals/EditOrganizationModal';
+import ArchiveOrganizationModal from '../../components/modals/ArchiveOrganizationModal';
 import AppLayout from '../../components/layout/AppLayout';
 
 export default function OrganizationsPage() {
@@ -9,6 +11,8 @@ export default function OrganizationsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingOrg, setEditingOrg] = useState(null);
+  const [archivingOrg, setArchivingOrg] = useState(null);
 
   async function refresh() {
     setLoading(true);
@@ -32,21 +36,14 @@ export default function OrganizationsPage() {
     refresh();
   }
 
-  async function handleDelete(org) {
-    const programNote = org.programs?.length
-      ? ` and its program "${org.programs[0].name}" (including all residents, modules, and records)`
-      : '';
-    const confirmed = window.confirm(
-      `Delete "${org.name}"${programNote}? This cannot be undone.`
-    );
-    if (!confirmed) return;
+  function handleSaved() {
+    setEditingOrg(null);
+    refresh();
+  }
 
-    try {
-      await deleteOrganization(org.id);
-      refresh();
-    } catch (err) {
-      alert(err.message || 'Failed to delete organization');
-    }
+  function handleArchived() {
+    setArchivingOrg(null);
+    refresh();
   }
 
   return (
@@ -79,15 +76,9 @@ export default function OrganizationsPage() {
           <table className="min-w-full divide-y divide-slate-200">
             <thead className="bg-slate-50">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500">
-                  Organization
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500">
-                  Program
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500">
-                  Created
-                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500">Organization</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500">Program</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500">Created</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
@@ -106,12 +97,20 @@ export default function OrganizationsPage() {
                     {new Date(org.created_at).toLocaleDateString()}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button
-                      onClick={() => handleDelete(org)}
-                      className="text-sm font-medium text-red-600 hover:text-red-700"
-                    >
-                      Delete
-                    </button>
+                    <div className="flex justify-end gap-3">
+                      <button
+                        onClick={() => setEditingOrg(org)}
+                        className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => setArchivingOrg(org)}
+                        className="text-sm font-medium text-red-600 hover:text-red-700"
+                      >
+                        Archive
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -124,6 +123,22 @@ export default function OrganizationsPage() {
         <CreateOrganizationModal
           onClose={() => setShowCreateModal(false)}
           onCreated={handleCreated}
+        />
+      )}
+
+      {editingOrg && (
+        <EditOrganizationModal
+          org={editingOrg}
+          onClose={() => setEditingOrg(null)}
+          onSaved={handleSaved}
+        />
+      )}
+
+      {archivingOrg && (
+        <ArchiveOrganizationModal
+          org={archivingOrg}
+          onClose={() => setArchivingOrg(null)}
+          onArchived={handleArchived}
         />
       )}
     </AppLayout>

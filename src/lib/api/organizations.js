@@ -1,21 +1,17 @@
 // src/lib/api/organizations.js
-// Phase 4: Program Management (Admin) — Organization CRUD
-// Plain client-side CRUD, RLS-protected. Single table, no atomicity
-// concerns, so no RPC needed here (contrast with programs.js, which
-// wraps program creation in the provision_program RPC).
-
 import { supabase } from '../supabase';
 
-/**
- * List all organizations, with their linked program (if any) so the
- * UI can show provisioning status at a glance.
- */
-export async function listOrganizations() {
-  const { data, error } = await supabase
+export async function listOrganizations({ includeArchived = false } = {}) {
+  let query = supabase
     .from('organizations')
-    .select('id, name, created_at, programs(id, name)')
+    .select('id, name, status, created_at, archived_at, programs(id, name)')
     .order('created_at', { ascending: false });
 
+  if (!includeArchived) {
+    query = query.eq('status', 'active');
+  }
+
+  const { data, error } = await query;
   if (error) throw error;
   return data;
 }
@@ -23,7 +19,7 @@ export async function listOrganizations() {
 export async function getOrganization(orgId) {
   const { data, error } = await supabase
     .from('organizations')
-    .select('id, name, created_at, programs(id, name)')
+    .select('id, name, status, created_at, archived_at, programs(id, name)')
     .eq('id', orgId)
     .single();
 
@@ -54,17 +50,26 @@ export async function updateOrganization(orgId, { name }) {
   return data;
 }
 
-/**
- * Deleting an organization cascades to its program (and that program's
- * modules/tasks/residents/etc. per FK ON DELETE CASCADE). Callers must
- * confirm with the user before calling this — it is destructive and
- * cannot be undone.
- */
-export async function deleteOrganization(orgId) {
-  const { error } = await supabase
+export async function archiveOrganization(orgId) {
+  const { data, error } = await supabase
     .from('organizations')
-    .delete()
-    .eq('id', orgId);
+    .update({ status: 'archived' })
+    .eq('id', orgId)
+    .select()
+    .single();
 
   if (error) throw error;
+  return data;
+}
+
+export async function unarchiveOrganization(orgId) {
+  const { data, error } = await supabase
+    .from('organizations')
+    .update({ status: 'active' })
+    .eq('id', orgId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
 }

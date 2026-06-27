@@ -45,6 +45,72 @@ resident progress, manage steering committee records, and handle resident applic
 - Environment variables (VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY) set in Vercel project settings
 - Supabase redirect URLs configured for localhost and production domains
 
+---
+
+## Going Live — Production Environment Setup
+
+**Current state:** The Supabase project `fmwyajlsckmgjtclnypq` is the **dev/staging**
+environment. It contains test data and should stay that way permanently. Do NOT
+point production traffic at it.
+
+**When ready to launch, follow these steps in order:**
+
+### 1. Create a new Supabase project
+- Name it something like `medphystrack-prod`
+- Note the new project URL and anon key
+
+### 2. Apply all migrations to the production project (in order)
+Run each file in the Supabase SQL editor, 001 → 008:
+```
+supabase/migrations/001_initial_schema.sql
+supabase/migrations/002_rls_policies.sql
+supabase/migrations/003_curriculum_template_fields.sql
+supabase/migrations/004_mirror_fields_to_program_tables.sql
+supabase/migrations/005_module_evaluation_workflow.sql
+supabase/migrations/006_evaluation_files_storage.sql   ← see note below
+supabase/migrations/007_programs_org_id_unique.sql
+supabase/migrations/008_provision_program_rpc.sql
+```
+
+### 3. Create the Storage bucket (required before 006 RLS policies work)
+In the Supabase dashboard → Storage → New bucket:
+- **Name:** `evaluation-files`
+- **Public:** off (private)
+
+Do this before or immediately after running migration 006.
+
+### 4. Seed the template curriculum
+Copy the template seed SQL (template_modules + template_tasks, the 13-module
+CAMPEP curriculum) from the dev project and run it in the production SQL editor.
+The easiest way: Supabase dashboard → dev project → Table Editor → export rows,
+or write a seed script. The data lives in `template_modules` and `template_tasks`.
+
+### 5. Configure Supabase auth redirect URLs on the production project
+In the production project → Authentication → URL Configuration:
+- Site URL: `https://medphystrack.com`
+- Redirect URLs: `https://medphystrack.com/reset-password`
+
+### 6. Point Vercel to the production project
+In Vercel → Project Settings → Environment Variables, update for **Production**
+environment only:
+```
+VITE_SUPABASE_URL        = https://<prod-ref>.supabase.co
+VITE_SUPABASE_ANON_KEY   = <prod anon key>
+SUPABASE_SERVICE_ROLE_KEY = <prod service role key>
+```
+Keep the dev project keys in the **Preview** environment so feature branches
+and preview deployments still hit dev, not prod.
+
+### 7. Trigger a production deploy
+Push a commit or manually redeploy in Vercel. Verify the live site hits the
+production Supabase project (check network tab — the URL should show the new
+project ref).
+
+### What the production database starts with
+- Empty `organizations`, `programs`, `modules`, `tasks` (no test data)
+- The stock 13-module CAMPEP curriculum in `template_modules` / `template_tasks`
+- First real customer's org is provisioned by Super Admin via the normal flow
+
 ## Multi-Tenancy Model
 ...
 

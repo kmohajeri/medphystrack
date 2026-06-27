@@ -167,7 +167,7 @@ export default function CurriculumPage() {
         </div>
       )}
 
-      <div className="mt-6 space-y-2">
+      <div className="mt-6">
         {loading ? (
           <p className="text-sm text-slate-500">Loading…</p>
         ) : !program ? (
@@ -180,152 +180,173 @@ export default function CurriculumPage() {
             No modules yet. Click "Add module" to get started.
           </p>
         ) : (
-          modules.map((mod, modIdx) => {
-            const isExpanded = expanded.has(mod.id);
-            const taskCount = mod.tasks?.length ?? 0;
+          (() => {
+            // Group modules by year, preserving order_index order within each group
+            const groups = [
+              { key: '1', label: 'Year 1', mods: modules.filter(m => m.year === 1) },
+              { key: '2', label: 'Year 2', mods: modules.filter(m => m.year === 2) },
+              { key: 'other', label: 'Other', mods: modules.filter(m => !m.year) },
+            ].filter(g => g.mods.length > 0);
 
-            return (
-              <div
-                key={mod.id}
-                className="overflow-hidden rounded-lg border border-slate-200 bg-white"
-              >
-                {/* Module header */}
-                <div className="flex items-center gap-3 px-4 py-3">
-                  <button
-                    onClick={() => toggleExpand(mod.id)}
-                    className="flex-shrink-0 text-slate-400 hover:text-slate-700"
-                  >
-                    <Icon
-                      d={isExpanded ? ICON.chevronDown : ICON.chevronRight}
-                    />
-                  </button>
-
-                  <button
-                    onClick={() => toggleExpand(mod.id)}
-                    className="flex flex-1 min-w-0 items-center gap-2 text-left"
-                  >
-                    <span className="truncate text-sm font-semibold text-slate-900">
-                      {mod.name}
-                    </span>
-                    {mod.year && (
-                      <span className="flex-shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
-                        Yr {mod.year}
-                      </span>
-                    )}
-                    {mod.duration_weeks && (
-                      <span className="flex-shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
-                        {mod.duration_weeks}w
-                      </span>
-                    )}
-                    <span className="flex-shrink-0 text-xs text-slate-400">
-                      {taskCount} {taskCount === 1 ? 'task' : 'tasks'}
-                    </span>
-                  </button>
-
-                  <div className="flex flex-shrink-0 items-center gap-1">
-                    <button
-                      onClick={() => handleMoveModule(modIdx, -1)}
-                      disabled={modIdx === 0}
-                      title="Move up"
-                      className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed"
-                    >
-                      <Icon d={ICON.chevronUp} />
-                    </button>
-                    <button
-                      onClick={() => handleMoveModule(modIdx, 1)}
-                      disabled={modIdx === modules.length - 1}
-                      title="Move down"
-                      className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed"
-                    >
-                      <Icon d={ICON.chevronDown} />
-                    </button>
-                    <button
-                      onClick={() => setEditingModule(mod)}
-                      className="ml-1 rounded px-2 py-1 text-xs font-medium text-indigo-600 hover:bg-indigo-50"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => setDeletingModule(mod)}
-                      className="rounded px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
-                    >
-                      Delete
-                    </button>
-                  </div>
+            return groups.map((group, groupIdx) => (
+              <div key={group.key} className={groupIdx > 0 ? 'mt-8' : ''}>
+                {/* Year section header */}
+                <div className="mb-3 flex items-center gap-2">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    {group.label}
+                  </span>
+                  <span className="text-xs text-slate-300">·</span>
+                  <span className="text-xs text-slate-400">
+                    {group.mods.length} {group.mods.length === 1 ? 'module' : 'modules'}
+                  </span>
                 </div>
 
-                {/* Tasks (expanded) */}
-                {isExpanded && (
-                  <div className="border-t border-slate-100">
-                    {taskCount === 0 ? (
-                      <p className="px-12 py-3 text-sm text-slate-400">
-                        No tasks in this module.
-                      </p>
-                    ) : (
-                      <ul className="divide-y divide-slate-50">
-                        {mod.tasks.map((task, taskIdx) => (
-                          <li
-                            key={task.id}
-                            className="flex items-center gap-3 px-12 py-2.5"
+                <div className="space-y-2">
+                  {group.mods.map((mod) => {
+                    // Always use the full-list index for reorder operations
+                    const modIdx = modules.findIndex(m => m.id === mod.id);
+                    const isExpanded = expanded.has(mod.id);
+                    const taskCount = mod.tasks?.length ?? 0;
+                    const meta = [
+                      mod.duration_weeks ? `${mod.duration_weeks} weeks` : null,
+                      `${taskCount} ${taskCount === 1 ? 'task' : 'tasks'}`,
+                    ].filter(Boolean).join(' · ');
+
+                    return (
+                      <div
+                        key={mod.id}
+                        className="overflow-hidden rounded-lg border border-slate-200 bg-white"
+                      >
+                        {/* Module header */}
+                        <div className="flex items-center gap-3 px-4 py-3">
+                          <button
+                            onClick={() => toggleExpand(mod.id)}
+                            className="flex-shrink-0 text-slate-400 hover:text-slate-700"
                           >
-                            <TypeBadge type={task.task_type} />
-                            <span className="flex-1 min-w-0 truncate text-sm text-slate-800">
-                              {task.name}
+                            <Icon d={isExpanded ? ICON.chevronDown : ICON.chevronRight} />
+                          </button>
+
+                          {/* Two-line name + metadata */}
+                          <button
+                            onClick={() => toggleExpand(mod.id)}
+                            className="flex-1 min-w-0 text-left"
+                          >
+                            <span className="block truncate text-sm font-semibold text-slate-900">
+                              {mod.name}
                             </span>
-                            {!task.is_required && (
-                              <span className="flex-shrink-0 text-xs text-slate-400">
-                                Elective
-                              </span>
+                            <span className="block mt-0.5 text-xs text-slate-500">
+                              {meta}
+                            </span>
+                          </button>
+
+                          <div className="flex flex-shrink-0 items-center gap-1">
+                            <button
+                              onClick={() => handleMoveModule(modIdx, -1)}
+                              disabled={modIdx === 0}
+                              title="Move up"
+                              className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                            >
+                              <Icon d={ICON.chevronUp} />
+                            </button>
+                            <button
+                              onClick={() => handleMoveModule(modIdx, 1)}
+                              disabled={modIdx === modules.length - 1}
+                              title="Move down"
+                              className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                            >
+                              <Icon d={ICON.chevronDown} />
+                            </button>
+                            <button
+                              onClick={() => setEditingModule(mod)}
+                              className="ml-1 rounded px-2 py-1 text-xs font-medium text-indigo-600 hover:bg-indigo-50"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => setDeletingModule(mod)}
+                              className="rounded px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Tasks (expanded) */}
+                        {isExpanded && (
+                          <div className="border-t border-slate-100">
+                            {taskCount === 0 ? (
+                              <p className="px-12 py-3 text-sm text-slate-400">
+                                No tasks in this module.
+                              </p>
+                            ) : (
+                              <ul className="divide-y divide-slate-50">
+                                {mod.tasks.map((task, taskIdx) => (
+                                  <li
+                                    key={task.id}
+                                    className="flex items-center gap-3 px-12 py-2.5"
+                                  >
+                                    <TypeBadge type={task.task_type} />
+                                    <span className="flex-1 min-w-0 truncate text-sm text-slate-800">
+                                      {task.name}
+                                    </span>
+                                    {!task.is_required && (
+                                      <span className="flex-shrink-0 text-xs text-slate-400">
+                                        Elective
+                                      </span>
+                                    )}
+                                    <div className="flex flex-shrink-0 items-center gap-1 ml-2">
+                                      <button
+                                        onClick={() => handleMoveTask(modIdx, taskIdx, -1)}
+                                        disabled={taskIdx === 0}
+                                        title="Move up"
+                                        className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                                      >
+                                        <Icon d={ICON.chevronUp} className="h-3.5 w-3.5" />
+                                      </button>
+                                      <button
+                                        onClick={() => handleMoveTask(modIdx, taskIdx, 1)}
+                                        disabled={taskIdx === mod.tasks.length - 1}
+                                        title="Move down"
+                                        className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                                      >
+                                        <Icon d={ICON.chevronDown} className="h-3.5 w-3.5" />
+                                      </button>
+                                      <button
+                                        onClick={() => setEditingTask(task)}
+                                        className="ml-1 rounded px-2 py-0.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50"
+                                      >
+                                        Edit
+                                      </button>
+                                      <button
+                                        onClick={() => setDeletingTask(task)}
+                                        className="rounded px-2 py-0.5 text-xs font-medium text-red-600 hover:bg-red-50"
+                                      >
+                                        Delete
+                                      </button>
+                                    </div>
+                                  </li>
+                                ))}
+                              </ul>
                             )}
-                            <div className="flex flex-shrink-0 items-center gap-1 ml-2">
+
+                            <div className="border-t border-slate-50 px-12 py-2.5">
                               <button
-                                onClick={() => handleMoveTask(modIdx, taskIdx, -1)}
-                                disabled={taskIdx === 0}
-                                title="Move up"
-                                className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                                onClick={() => setAddTaskModuleId(mod.id)}
+                                className="flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-700"
                               >
-                                <Icon d={ICON.chevronUp} className="h-3.5 w-3.5" />
-                              </button>
-                              <button
-                                onClick={() => handleMoveTask(modIdx, taskIdx, 1)}
-                                disabled={taskIdx === mod.tasks.length - 1}
-                                title="Move down"
-                                className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed"
-                              >
-                                <Icon d={ICON.chevronDown} className="h-3.5 w-3.5" />
-                              </button>
-                              <button
-                                onClick={() => setEditingTask(task)}
-                                className="ml-1 rounded px-2 py-0.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50"
-                              >
-                                Edit
-                              </button>
-                              <button
-                                onClick={() => setDeletingTask(task)}
-                                className="rounded px-2 py-0.5 text-xs font-medium text-red-600 hover:bg-red-50"
-                              >
-                                Delete
+                                <Icon d={ICON.plus} className="h-3.5 w-3.5" />
+                                Add task
                               </button>
                             </div>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-
-                    <div className="border-t border-slate-50 px-12 py-2.5">
-                      <button
-                        onClick={() => setAddTaskModuleId(mod.id)}
-                        className="flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-700"
-                      >
-                        <Icon d={ICON.plus} className="h-3.5 w-3.5" />
-                        Add task
-                      </button>
-                    </div>
-                  </div>
-                )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            );
-          })
+            ));
+          })()
         )}
       </div>
 

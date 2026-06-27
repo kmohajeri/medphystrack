@@ -75,6 +75,18 @@ export async function unarchiveProgram(programId) {
   return data;
 }
 
+export async function getProgramByOrgId(orgId) {
+  const { data, error } = await supabase
+    .from('programs')
+    .select('id, name, status, org_id, created_at')
+    .eq('org_id', orgId)
+    .eq('status', 'active')
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
 export async function getProgramCurriculum(programId) {
   const { data, error } = await supabase
     .from('modules')

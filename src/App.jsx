@@ -9,6 +9,7 @@ import ProgramAdminDashboard from './pages/dashboards/ProgramAdminDashboard'
 import ResidentDashboard from './pages/dashboards/ResidentDashboard'
 import OrganizationsPage from './pages/superadmin/OrganizationsPage'
 import ProgramsPage from './pages/superadmin/ProgramsPage'
+import CurriculumPage from './pages/programadmin/CurriculumPage'
 
 function RootRedirect() {
   const { session, profile, loading } = useAuth()
@@ -74,6 +75,14 @@ export default function App() {
             element={
               <ProtectedRoute allowedRole="program_admin">
                 <ProgramAdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/program-admin/curriculum"
+            element={
+              <ProtectedRoute allowedRole="program_admin">
+                <CurriculumPage />
               </ProtectedRoute>
             }
           />

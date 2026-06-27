@@ -297,8 +297,8 @@ Migration files: `supabase/migrations/`
 - `002_rls_policies.sql` — RLS enabled with role-based policies
 - `003_curriculum_template_fields.sql` — adds duration_weeks, year to template_modules; cases_required to template_tasks; tightens task_type CHECK to ('clinical', 'reading')
 - `004_mirror_fields_to_program_tables.sql` — mirrors duration_weeks, year onto modules; cases_required onto tasks; tightens task_type CHECK on tasks to ('clinical', 'reading')
-- `005_module_evaluation_workflow.sql` — revamps module_evaluations columns (booleans, oral_exam_score text, renamed comments), adds evaluation_files table, adds started_at/completed_at to resident_modules
-- `006_evaluation_files_storage.sql` — creates evaluation-files Storage bucket and its RLS policies
+- `005_module_evaluation_workflow.sql` — (1) adds status/archived_at columns to organizations and programs with a set_archived_at() trigger; (2) revamps module_evaluations columns (booleans, oral_exam_score text, renamed comments, new engaged_with_mentors_staff and resident_comments fields); (3) adds evaluation_files table + RLS; (4) adds started_at/completed_at to resident_modules
+- `006_evaluation_files_storage.sql` — RLS policies on storage.objects for the evaluation-files bucket (bucket must be created manually in Supabase dashboard first — private, name: evaluation-files)
 - `007_programs_org_id_unique.sql` — adds UNIQUE constraint on programs.org_id (1:1 org-to-program invariant)
 
 Status: Live in Supabase project fmwyajlsckmgjtclnypq

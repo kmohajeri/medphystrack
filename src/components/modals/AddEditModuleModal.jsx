@@ -64,15 +64,15 @@ export default function AddEditModuleModal({ programId, module = null, onClose, 
               <label className="block text-sm font-medium text-slate-700">
                 Training year
               </label>
-              <select
+              <input
+                type="number"
+                min="0"
+                max="10"
                 value={year}
                 onChange={(e) => setYear(e.target.value)}
+                placeholder="e.g. 1"
                 className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              >
-                <option value="">—</option>
-                <option value="1">Year 1</option>
-                <option value="2">Year 2</option>
-              </select>
+              />
             </div>
 
             <div>

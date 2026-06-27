@@ -181,22 +181,28 @@ export default function CurriculumPage() {
           </p>
         ) : (
           (() => {
-            // Group modules by year, preserving order_index order within each group
-            const groups = [
-              { key: '1', label: 'Year 1', mods: modules.filter(m => m.year === 1) },
-              { key: '2', label: 'Year 2', mods: modules.filter(m => m.year === 2) },
-              { key: 'other', label: 'Other', mods: modules.filter(m => !m.year) },
-            ].filter(g => g.mods.length > 0);
+            // Build groups dynamically from whatever year values exist
+            const distinctYears = [...new Set(modules.map(m => m.year).filter(Boolean))]
+              .sort((a, b) => a - b);
+            const groups = distinctYears.map(yr => ({
+              key: String(yr),
+              label: `Year ${yr}`,
+              mods: modules.filter(m => m.year === yr),
+            }));
+            const unassigned = modules.filter(m => !m.year);
+            if (unassigned.length > 0) {
+              groups.push({ key: 'other', label: 'Unassigned', mods: unassigned });
+            }
 
             return groups.map((group, groupIdx) => (
               <div key={group.key} className={groupIdx > 0 ? 'mt-8' : ''}>
                 {/* Year section header */}
                 <div className="mb-3 flex items-center gap-2">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-600">
                     {group.label}
                   </span>
-                  <span className="text-xs text-slate-300">·</span>
-                  <span className="text-xs text-slate-400">
+                  <span className="text-xs text-slate-400">·</span>
+                  <span className="text-xs text-slate-500">
                     {group.mods.length} {group.mods.length === 1 ? 'module' : 'modules'}
                   </span>
                 </div>

@@ -13,7 +13,19 @@ export async function listOrganizations({ includeArchived = false } = {}) {
 
   const { data, error } = await query;
   if (error) throw error;
-  return data;
+  // Migration 007 added UNIQUE on programs.org_id, which causes PostgREST to
+  // return the embedded programs resource as a plain object instead of an
+  // array (1-to-1 cardinality inference). Normalize here so all callers can
+  // safely use org.programs.length / org.programs[0].
+  return (data ?? []).map((org) => ({
+    ...org,
+    programs:
+      org.programs == null
+        ? []
+        : Array.isArray(org.programs)
+          ? org.programs
+          : [org.programs],
+  }));
 }
 
 export async function getOrganization(orgId) {
@@ -24,7 +36,16 @@ export async function getOrganization(orgId) {
     .single();
 
   if (error) throw error;
-  return data;
+  const programs = data?.programs;
+  return {
+    ...data,
+    programs:
+      programs == null
+        ? []
+        : Array.isArray(programs)
+          ? programs
+          : [programs],
+  };
 }
 
 export async function createOrganization({ name }) {

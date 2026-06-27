@@ -273,7 +273,7 @@ review and customize the copied curriculum after a new program is provisioned.
 | Phase 1 | Foundation & Database Schema | ✅ Complete |
 | Phase 2 | Authentication & User Roles | ✅ Complete |
 | Phase 3 | Frontend Scaffold | ✅ Complete |
-| Phase 4 | Program Management (Admin) | 🔲 Not started |
+| Phase 4 | Program Management (Admin) | ✅ Complete |
 | Phase 5 | Resident Management (Admin) | 🔲 Not started |
 | Phase 6 | Resident Portal | 🔲 Not started |
 | Phase 7 | Steering Committee (Admin) | 🔲 Not started |
@@ -282,6 +282,36 @@ review and customize the copied curriculum after a new program is provisioned.
 | Phase 10 | Billing & Multi-Tenancy | 🔲 Not started |
 | Phase 11 | Support & Notifications | 🔲 Not started |
 | Phase 12 | Polish & Launch Prep | 🔲 Not started |
+
+---
+
+## Phase QA Notes
+
+### Phase 4 — Program Management (Admin) — tested 2026-06-27
+
+**Method:** Playwright (Chromium, headed) against live Vite dev server (`npm run dev`) and the dev Supabase project. Two accounts used: `kayhan.mohajeri@gmail.com` (super_admin) and `kmohajeri@outlook.com` (program_admin).
+
+**How to re-run:** The test script lives at `phase4_test.mjs` in the project root (gitignored). Run with `node phase4_test.mjs` from the project root after starting the dev server. Requires `playwright` as a dev dependency (`npm install --save-dev playwright && npx playwright install chromium`).
+
+**What was tested:**
+
+| Area | Steps |
+|---|---|
+| Super Admin → Organizations | Create org; rename org (Edit modal); archive org (type-to-confirm modal) |
+| Super Admin → Programs | Create program for a specific org (provisions 13 modules + 149 tasks via `provision_program` RPC); rename; archive |
+| Program Admin → Curriculum | Year section headers (Year 1 / Year 2 / Unassigned); module cards render; expand module to see tasks; Clinical + Reading type badges; Add module; Edit module; Reorder module (move up); Add task; Edit task; Delete task; Delete module |
+| RLS probe | program_admin navigating to `/super-admin/organizations` is redirected away — no data exposed |
+| Hard nav | `/program-admin/curriculum` loads correctly on full page reload |
+
+**Result:** PASS — 24/24 steps
+
+**Bugs found and fixed during testing:**
+- `LoginPage` was calling `navigate()` during render (lines 15–18), producing a React `setState during render` warning. Fixed by moving the redirect into a `useEffect`.
+
+**Known limitations / things not tested:**
+- Archive does not delete data — archived orgs/programs are hidden from active lists but data is preserved. No UI yet to view or restore archived records.
+- `provision_program` RPC takes ~15–20 seconds (copies 149 tasks). No loading indicator beyond button going disabled — acceptable for now, worth a spinner in a later polish phase.
+- The `ArchiveOrganizationModal` uses a type-to-confirm pattern (user must type the org name exactly). Same pattern not used for programs — the program archive modal uses a simple red button confirm. Inconsistency is intentional for now (orgs are higher stakes than programs).
 
 ---
 

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth, roleHomePath } from '../context/AuthContext'
@@ -11,11 +11,12 @@ export default function LoginPage() {
   const [error, setError] = useState(null)
   const [submitting, setSubmitting] = useState(false)
 
-  // Already logged in — go to their dashboard
-  if (!loading && session && profile) {
-    navigate(roleHomePath(profile.role), { replace: true })
-    return null
-  }
+  // Already logged in — redirect in an effect to avoid setState-during-render warning
+  useEffect(() => {
+    if (!loading && session && profile) {
+      navigate(roleHomePath(profile.role), { replace: true })
+    }
+  }, [loading, session, profile, navigate])
 
   async function handleSubmit(e) {
     e.preventDefault()

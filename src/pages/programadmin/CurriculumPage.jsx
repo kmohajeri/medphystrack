@@ -280,6 +280,11 @@ export default function CurriculumPage() {
                         {/* Tasks (expanded) */}
                         {isExpanded && (
                           <div className="border-t border-slate-100">
+                            {mod.description && (
+                              <div className="px-5 py-3 bg-slate-50 border-b border-slate-100">
+                                <p className="text-sm text-slate-600 leading-relaxed">{mod.description}</p>
+                              </div>
+                            )}
                             {taskCount === 0 ? (
                               <p className="px-12 py-3 text-sm text-slate-400">
                                 No tasks in this module.

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import AppLayout from '../../components/layout/AppLayout';
 import { getProgramByOrgId } from '../../lib/api/programs';
-import { listResidents, assignCurriculum } from '../../lib/api/residents';
+import { listResidents, assignCurriculum, inviteResident } from '../../lib/api/residents';
 import AddEditResidentModal from '../../components/modals/AddEditResidentModal';
 
 const STATUS_BADGE = {
@@ -18,14 +18,17 @@ function fmt(dateStr) {
 
 export default function ResidentsPage() {
   const { profile } = useAuth();
-  const [program, setProgram]       = useState(null);
-  const [residents, setResidents]   = useState([]);
-  const [loading, setLoading]       = useState(true);
-  const [error, setError]           = useState(null);
-  const [addOpen, setAddOpen]       = useState(false);
-  const [editing, setEditing]       = useState(null);
-  const [assigning, setAssigning]   = useState(null); // resident id being assigned
-  const [assignError, setAssignError] = useState(null);
+  const [program, setProgram]           = useState(null);
+  const [residents, setResidents]       = useState([]);
+  const [loading, setLoading]           = useState(true);
+  const [error, setError]               = useState(null);
+  const [addOpen, setAddOpen]           = useState(false);
+  const [editing, setEditing]           = useState(null);
+  const [assigning, setAssigning]       = useState(null);
+  const [assignError, setAssignError]   = useState(null);
+  const [inviting, setInviting]         = useState(null);  // resident id being invited
+  const [invitedSet, setInvitedSet]     = useState(new Set()); // ids sent this session
+  const [inviteError, setInviteError]   = useState(null);
 
   async function load() {
     setLoading(true);
@@ -57,6 +60,19 @@ export default function ResidentsPage() {
     }
   }
 
+  async function handleInvite(resident) {
+    setInviting(resident.id);
+    setInviteError(null);
+    try {
+      await inviteResident(resident.email);
+      setInvitedSet((prev) => new Set([...prev, resident.id]));
+    } catch (err) {
+      setInviteError(err.message || 'Failed to send invite');
+    } finally {
+      setInviting(null);
+    }
+  }
+
   return (
     <AppLayout>
       <div className="flex items-start justify-between">
@@ -80,6 +96,9 @@ export default function ResidentsPage() {
       {assignError && (
         <div className="mt-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">{assignError}</div>
       )}
+      {inviteError && (
+        <div className="mt-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">{inviteError}</div>
+      )}
 
       <div className="mt-6 overflow-hidden rounded-lg border border-slate-200 bg-white">
         {loading ? (
@@ -96,14 +115,19 @@ export default function ResidentsPage() {
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500">Email</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500">Start Date</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500">Status</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500">Portal</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500">Curriculum</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
               {residents.map((r) => {
-                const assigned = r.resident_modules?.length > 0;
+                const assigned    = r.resident_modules?.length > 0;
+                const hasAccount  = !!r.user_id;
                 const isAssigning = assigning === r.id;
+                const isInviting  = inviting === r.id;
+                const justInvited = invitedSet.has(r.id);
+
                 return (
                   <tr key={r.id}>
                     <td className="px-4 py-3 text-sm font-medium text-slate-900">
@@ -115,6 +139,25 @@ export default function ResidentsPage() {
                       <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize ${STATUS_BADGE[r.status] ?? 'bg-slate-100 text-slate-600'}`}>
                         {r.status}
                       </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      {hasAccount ? (
+                        <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
+                          Active
+                        </span>
+                      ) : justInvited ? (
+                        <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
+                          Invite sent
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => handleInvite(r)}
+                          disabled={isInviting}
+                          className="text-xs font-medium text-indigo-600 hover:text-indigo-700 disabled:opacity-50"
+                        >
+                          {isInviting ? 'Sending…' : 'Send invite'}
+                        </button>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-sm">
                       {assigned ? (

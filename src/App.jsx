@@ -12,6 +12,9 @@ import ProgramsPage from './pages/superadmin/ProgramsPage'
 import CurriculumPage from './pages/programadmin/CurriculumPage'
 import ResidentsPage from './pages/programadmin/ResidentsPage'
 import ApplicationsPage from './pages/programadmin/ApplicationsPage'
+import MyCurriculumPage from './pages/resident/MyCurriculumPage'
+import ResidentEvaluationsPage from './pages/resident/EvaluationsPage'
+import HandbookPage from './pages/resident/HandbookPage'
 
 function RootRedirect() {
   const { session, profile, loading } = useAuth()
@@ -109,6 +112,30 @@ export default function App() {
             element={
               <ProtectedRoute allowedRole="resident">
                 <ResidentDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/resident/curriculum"
+            element={
+              <ProtectedRoute allowedRole="resident">
+                <MyCurriculumPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/resident/evaluations"
+            element={
+              <ProtectedRoute allowedRole="resident">
+                <ResidentEvaluationsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/resident/handbook"
+            element={
+              <ProtectedRoute allowedRole="resident">
+                <HandbookPage />
               </ProtectedRoute>
             }
           />

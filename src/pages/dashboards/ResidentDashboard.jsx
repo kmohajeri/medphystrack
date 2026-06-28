@@ -1,29 +1,94 @@
-import { useAuth } from '../../context/AuthContext'
-import AppLayout from '../../components/layout/AppLayout'
-
-const STATS = ['Modules Assigned', 'Tasks Completed', 'Tasks Remaining']
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import AppLayout from '../../components/layout/AppLayout';
+import { getMyStats } from '../../lib/api/residentPortal';
 
 export default function ResidentDashboard() {
-  const { profile } = useAuth()
+  const { profile } = useAuth();
+  const navigate = useNavigate();
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getMyStats()
+      .then(setStats)
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const pct = stats && stats.totalTasks > 0
+    ? Math.round((stats.completedTasks / stats.totalTasks) * 100)
+    : 0;
 
   return (
     <AppLayout>
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-gray-900">
+      <div className="mb-6">
+        <h1 className="text-xl font-semibold text-slate-900">
           Welcome{profile?.first_name ? `, ${profile.first_name}` : ''}
         </h1>
-        <p className="mt-1 text-sm text-gray-500">Your residency curriculum progress</p>
+        <p className="mt-1 text-sm text-slate-500">Your residency curriculum progress</p>
       </div>
 
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-        {STATS.map(label => (
-          <div key={label} className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-            <p className="text-sm font-medium text-gray-500">{label}</p>
-            <p className="mt-2 text-3xl font-semibold text-gray-900">—</p>
-            <p className="mt-1 text-xs text-gray-400">Coming in a later phase</p>
+      {loading ? (
+        <p className="text-sm text-slate-400">Loading…</p>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <StatCard
+              label="Modules Assigned"
+              value={stats?.moduleCount ?? '—'}
+            />
+            <StatCard
+              label="Tasks Completed"
+              value={stats ? `${stats.completedTasks} / ${stats.totalTasks}` : '—'}
+            />
+            <StatCard
+              label="Tasks Remaining"
+              value={stats?.remainingTasks ?? '—'}
+            />
           </div>
-        ))}
-      </div>
+
+          {stats && stats.totalTasks > 0 && (
+            <div className="mt-6 rounded-lg border border-slate-200 bg-white p-5">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-medium text-slate-700">Overall progress</p>
+                <p className="text-sm font-semibold text-slate-900">{pct}%</p>
+              </div>
+              <div className="h-2 w-full rounded-full bg-slate-100">
+                <div
+                  className="h-2 rounded-full bg-indigo-500 transition-all"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {stats && stats.moduleCount === 0 && (
+            <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-700">
+              No curriculum assigned yet. Your program director will assign it shortly.
+            </div>
+          )}
+
+          <div className="mt-6">
+            <button
+              onClick={() => navigate('/resident/curriculum')}
+              className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+            >
+              View my curriculum →
+            </button>
+          </div>
+        </>
+      )}
     </AppLayout>
-  )
+  );
+}
+
+function StatCard({ label, value }) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white p-5">
+      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
+      <p className="mt-2 text-3xl font-semibold text-slate-900">{value}</p>
+    </div>
+  );
 }

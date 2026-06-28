@@ -3,7 +3,7 @@ import { supabase } from '../supabase';
 export async function listResidents(programId) {
   const { data, error } = await supabase
     .from('residents')
-    .select('id, first_name, last_name, email, start_date, end_date, status, created_at, resident_modules(id)')
+    .select('id, first_name, last_name, email, start_date, end_date, status, user_id, created_at, resident_modules(id)')
     .eq('program_id', programId)
     .order('created_at', { ascending: false });
 
@@ -47,6 +47,23 @@ export async function updateResident(residentId, { firstName, lastName, email, s
 
   if (error) throw error;
   return data;
+}
+
+export async function inviteResident(email) {
+  // Create auth account with a random password — trigger auto-links resident record
+  const { error: signUpError } = await supabase.auth.signUp({
+    email,
+    password: crypto.randomUUID(),
+  });
+  // Ignore "already registered" — account may exist from a previous invite attempt
+  if (signUpError && !signUpError.message.toLowerCase().includes('already registered')) {
+    throw signUpError;
+  }
+  // Send a password-reset email so the resident can set their own password
+  const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/reset-password`,
+  });
+  if (resetError) throw resetError;
 }
 
 export async function assignCurriculum(residentId) {

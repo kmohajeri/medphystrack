@@ -231,11 +231,11 @@ export default function MyCurriculumPage() {
                 const progress = moduleProgress(rm.tasks);
 
                 return (
-                  <div key={rm.id} className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+                  <div key={rm.id} className="rounded-lg border border-slate-200 bg-white">
                     {/* Module header row */}
                     <button
                       onClick={() => toggleModule(rm.id)}
-                      className="flex w-full flex-col px-4 py-3 text-left hover:bg-slate-50"
+                      className={`flex w-full flex-col px-4 py-3 text-left hover:bg-slate-50 rounded-t-lg${!isOpen ? ' rounded-b-lg' : ''}`}
                     >
                       <div className="flex w-full items-center justify-between">
                         <div className="flex items-center gap-3 min-w-0">
@@ -261,26 +261,50 @@ export default function MyCurriculumPage() {
 
                       {/* Stacked progress bar */}
                       {progress && (
-                        <div className="mt-2 flex h-1.5 w-full overflow-hidden rounded-full">
-                          {progress.completed > 0 && (
-                            <div className="bg-green-500" style={{ width: `${(progress.completed / progress.total) * 100}%` }} />
-                          )}
-                          {progress.inProgress > 0 && (
-                            <div className="bg-blue-400" style={{ width: `${(progress.inProgress / progress.total) * 100}%` }} />
-                          )}
-                          {progress.notStarted > 0 && (
-                            <div className="bg-slate-200" style={{ width: `${(progress.notStarted / progress.total) * 100}%` }} />
-                          )}
-                          {progress.na > 0 && (
-                            <div className="bg-slate-400" style={{ width: `${(progress.na / progress.total) * 100}%` }} />
-                          )}
+                        <div className="relative mt-2 group/bar">
+                          <div className="flex h-1.5 w-full overflow-hidden rounded-full">
+                            {progress.completed > 0 && (
+                              <div className="bg-green-500" style={{ width: `${(progress.completed / progress.total) * 100}%` }} />
+                            )}
+                            {progress.inProgress > 0 && (
+                              <div className="bg-blue-400" style={{ width: `${(progress.inProgress / progress.total) * 100}%` }} />
+                            )}
+                            {progress.notStarted > 0 && (
+                              <div className="bg-slate-200" style={{ width: `${(progress.notStarted / progress.total) * 100}%` }} />
+                            )}
+                            {progress.na > 0 && (
+                              <div className="bg-slate-400" style={{ width: `${(progress.na / progress.total) * 100}%` }} />
+                            )}
+                          </div>
+
+                          {/* Hover tooltip */}
+                          <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 hidden -translate-x-1/2 group-hover/bar:block">
+                            <div className="rounded-lg bg-slate-800 px-3 py-2 shadow-lg">
+                              <div className="space-y-1 whitespace-nowrap">
+                                {[
+                                  { color: 'bg-green-500', label: 'Completed',   count: progress.completed },
+                                  { color: 'bg-blue-400',  label: 'In progress', count: progress.inProgress },
+                                  { color: 'bg-slate-300', label: 'Not started', count: progress.notStarted },
+                                  { color: 'bg-slate-500', label: 'N/A',         count: progress.na },
+                                ]
+                                  .filter((s) => s.count > 0)
+                                  .map((s) => (
+                                    <div key={s.label} className="flex items-center gap-2 text-xs text-white">
+                                      <span className={`h-2 w-2 flex-shrink-0 rounded-full ${s.color}`} />
+                                      <span>{s.count} {s.label.toLowerCase()}</span>
+                                    </div>
+                                  ))}
+                              </div>
+                              <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800" />
+                            </div>
+                          </div>
                         </div>
                       )}
                     </button>
 
                     {/* Task list */}
                     {isOpen && (
-                      <div className="border-t border-slate-100">
+                      <div className="overflow-hidden rounded-b-lg border-t border-slate-100">
                         {rm.module?.description && (
                           <div className="px-5 py-3 bg-slate-50 border-b border-slate-100">
                             <p className="text-sm text-slate-600 leading-relaxed">{rm.module.description}</p>

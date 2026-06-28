@@ -66,6 +66,16 @@ export async function inviteResident(email) {
   if (resetError) throw resetError;
 }
 
+export async function getResidentById(residentId) {
+  const { data, error } = await supabase
+    .from('residents')
+    .select('id, first_name, last_name, email, start_date, status')
+    .eq('id', residentId)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 export async function assignCurriculum(residentId) {
   const { error } = await supabase.rpc('assign_curriculum', {
     p_resident_id: residentId,

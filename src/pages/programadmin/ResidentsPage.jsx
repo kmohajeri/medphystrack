@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import AppLayout from '../../components/layout/AppLayout';
 import { getProgramByOrgId } from '../../lib/api/programs';
 import { listResidents, assignCurriculum, inviteResident } from '../../lib/api/residents';
@@ -18,6 +19,7 @@ function fmt(dateStr) {
 
 export default function ResidentsPage() {
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const [program, setProgram]           = useState(null);
   const [residents, setResidents]       = useState([]);
   const [loading, setLoading]           = useState(true);
@@ -177,6 +179,14 @@ export default function ResidentsPage() {
                             className="text-sm font-medium text-indigo-600 hover:text-indigo-700 disabled:opacity-50"
                           >
                             {isAssigning ? 'Assigning…' : 'Assign curriculum'}
+                          </button>
+                        )}
+                        {assigned && (
+                          <button
+                            onClick={() => navigate(`/program-admin/residents/${r.id}`)}
+                            className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                          >
+                            Progress
                           </button>
                         )}
                         <button

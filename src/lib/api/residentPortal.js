@@ -34,6 +34,31 @@ export async function getMyCurriculum() {
     }));
 }
 
+// Program-admin view: curriculum for a specific resident (filtered by resident_id)
+export async function getResidentCurriculum(residentId) {
+  const { data, error } = await supabase
+    .from('resident_modules')
+    .select(`
+      id, status, started_at, completed_at,
+      module:modules(id, name, description, year, order_index, duration_weeks),
+      tasks:resident_tasks(
+        id, status, notes, completed_at,
+        task:tasks(id, name, task_type, description, resource_url, is_required, order_index)
+      )
+    `)
+    .eq('resident_id', residentId);
+  if (error) throw error;
+
+  return (data ?? [])
+    .sort((a, b) => (a.module?.order_index ?? 0) - (b.module?.order_index ?? 0))
+    .map((rm) => ({
+      ...rm,
+      tasks: (rm.tasks ?? []).sort(
+        (a, b) => (a.task?.order_index ?? 0) - (b.task?.order_index ?? 0)
+      ),
+    }));
+}
+
 export async function getMyStats() {
   const [modulesRes, totalRes, completedRes] = await Promise.all([
     supabase.from('resident_modules').select('*', { count: 'exact', head: true }),

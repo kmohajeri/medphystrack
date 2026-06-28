@@ -12,6 +12,7 @@ import ProgramsPage from './pages/superadmin/ProgramsPage'
 import CurriculumPage from './pages/programadmin/CurriculumPage'
 import ResidentsPage from './pages/programadmin/ResidentsPage'
 import ApplicationsPage from './pages/programadmin/ApplicationsPage'
+import ResidentProgressPage from './pages/programadmin/ResidentProgressPage'
 import MyCurriculumPage from './pages/resident/MyCurriculumPage'
 import ResidentEvaluationsPage from './pages/resident/EvaluationsPage'
 import HandbookPage from './pages/resident/HandbookPage'
@@ -96,6 +97,14 @@ export default function App() {
             element={
               <ProtectedRoute allowedRole="program_admin">
                 <ResidentsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/program-admin/residents/:residentId"
+            element={
+              <ProtectedRoute allowedRole="program_admin">
+                <ResidentProgressPage />
               </ProtectedRoute>
             }
           />

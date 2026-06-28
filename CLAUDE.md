@@ -60,7 +60,7 @@ point production traffic at it.
 - Note the new project URL and anon key
 
 ### 2. Apply all migrations to the production project (in order)
-Run each file in the Supabase SQL editor, 001 → 008:
+Run each file in the Supabase SQL editor, 001 → 011:
 ```
 supabase/migrations/001_initial_schema.sql
 supabase/migrations/002_rls_policies.sql
@@ -70,6 +70,9 @@ supabase/migrations/005_module_evaluation_workflow.sql
 supabase/migrations/006_evaluation_files_storage.sql   ← see note below
 supabase/migrations/007_programs_org_id_unique.sql
 supabase/migrations/008_provision_program_rpc.sql
+supabase/migrations/009_assign_curriculum_rpc.sql
+supabase/migrations/010_resident_portal.sql
+supabase/migrations/011_fix_program_admin_rls.sql
 ```
 
 ### 3. Create the Storage bucket (required before 006 RLS policies work)
@@ -275,7 +278,7 @@ review and customize the copied curriculum after a new program is provisioned.
 | Phase 3 | Frontend Scaffold | ✅ Complete |
 | Phase 4 | Program Management (Admin) | ✅ Complete |
 | Phase 5 | Resident Management (Admin) | ✅ Complete |
-| Phase 6 | Resident Portal | 🔲 Not started |
+| Phase 6 | Resident Portal | ✅ Complete |
 | Phase 7 | Steering Committee (Admin) | 🔲 Not started |
 | Phase 8 | Module Evaluation | 🔲 Not started |
 | Phase 9 | Handbook (Dynamic PDF) | 🔲 Not started |
@@ -351,6 +354,34 @@ review and customize the copied curriculum after a new program is provisioned.
 
 ---
 
+### Phase 6 — Resident Portal — tested 2026-06-28
+
+**Method:** Manual browser testing (not Playwright). Resident account: `kayhan.mohajeri+resident@gmail.com` (Gmail +alias, delivers to primary inbox), password `Resident2026!`. Test resident record: `id: 5930ebe9`, name TestRes1782665580288, 13 modules + 149 tasks assigned.
+
+**What was built:**
+
+| Feature | Description |
+|---|---|
+| Resident Dashboard | Real stats via `getMyStats()`: module count, tasks completed/total, remaining; overall progress bar; "no curriculum" warning if unassigned |
+| My Curriculum page | Year-grouped modules (Year 1 / Year 2); module header shows name + task count + status badge + stacked progress bar; module description shown at top of expanded section; task list with type badge (Clinical/Reading), status dropdown (Not Started / In Progress / Completed / N/A), notes textarea (saved on blur) |
+| Stacked progress bar | Four segments: green (completed), blue (in progress), light gray (not started), medium gray (N/A); hover tooltip shows % for each non-zero segment; N/A tasks kept in denominator so other segments don't shift when a task is marked N/A |
+| Invite flow | Program admin clicks "Send invite" → `supabase.auth.signUp()` with random password → `handle_new_user()` trigger auto-links resident record and populates profile → `resetPasswordForEmail()` sends password-set email |
+| Program admin: resident progress | "Progress" button on residents table → `/program-admin/residents/:residentId` — read-only view: overall completion bar, year-grouped modules with progress bars and tooltips, task status badges, resident notes in italic |
+| Super admin: org drill-down | "View" on Organizations page → `/super-admin/organizations/:orgId` — program name + full resident roster with portal/curriculum status; "Progress" button → `/super-admin/organizations/:orgId/residents/:residentId` (same ResidentProgressPage, back label adapts via router state) |
+
+**Bugs found and fixed:**
+
+- **RLS security bug (migration 011)**: After migration 010 set `org_id` on resident profiles, all 15 `program_admin: full access to own org X` RLS policies matched residents too (no role check), letting residents see and modify other residents' data. Fixed by adding `get_my_role() = 'program_admin'` guard to every affected policy.
+- **Progress bar N/A distortion**: Marking a task N/A removed it from the bar's denominator, causing other segments (especially in-progress) to grow. Fixed by keeping N/A tasks in the denominator as a 4th segment (medium gray).
+- **Duplicate modules visible to resident**: Three Phase 5 test residents in the same org all had 13 modules each. Before the RLS fix, the logged-in resident saw all 39 modules (3 sets). Fixed by migration 011.
+
+**Known limitations:**
+- Module descriptions shown on expand are pulled from `modules.description`. If a module has no description, nothing shows (by design).
+- Resident progress page is read-only for both program admin and super admin — task status can only be changed by the resident (intentional: completion record is the resident's attestation).
+- Phase 6 Playwright test not written — manual verification only.
+
+---
+
 ## Phase 12 Scope Notes
 
 In addition to general polish and launch prep, Phase 12 includes:
@@ -373,7 +404,8 @@ Neither the Residents page nor the Applications page has a delete or archive act
 ## Key Product Decisions (Already Made)
 
 - **No subdomains** — single URL, org determined post-login
-- **Resident marks their own tasks** — no supervisor sign-off on individual tasks
+- **Resident marks their own tasks** — no supervisor sign-off on individual tasks; program admins cannot change task status (completion record is the resident's attestation; important for CAMPEP accountability)
+- **Program admin view is read-only for resident progress** — drill-down shows task statuses and notes but offers no edit controls
 - **Clinical tasks are not quantitative** — no case counts, just status
 - **Curriculum is copied on assignment** — residents own their task instances
 - **Template library** — default CAMPEP curriculum ships with the product
@@ -451,6 +483,10 @@ Migration files: `supabase/migrations/`
 - `005_module_evaluation_workflow.sql` — (1) adds status/archived_at columns to organizations and programs with a set_archived_at() trigger; (2) revamps module_evaluations columns (booleans, oral_exam_score text, renamed comments, new engaged_with_mentors_staff and resident_comments fields); (3) adds evaluation_files table + RLS; (4) adds started_at/completed_at to resident_modules
 - `006_evaluation_files_storage.sql` — RLS policies on storage.objects for the evaluation-files bucket (bucket must be created manually in Supabase dashboard first — private, name: evaluation-files)
 - `007_programs_org_id_unique.sql` — adds UNIQUE constraint on programs.org_id (1:1 org-to-program invariant)
+- `008_provision_program_rpc.sql` — `provision_program` RPC: copies template_modules + template_tasks into a new program's modules/tasks tables (copy-on-provision pattern)
+- `009_assign_curriculum_rpc.sql` — `assign_curriculum` RPC: copies program modules/tasks into per-resident instances (copy-on-assign pattern); also adds application-files Storage RLS policies
+- `010_resident_portal.sql` — extends `handle_new_user()` trigger to auto-link `residents.user_id` by email and pre-fill profile (role, org_id, name) on resident account creation; adds `resident: update own resident_modules` RLS policy
+- `011_fix_program_admin_rls.sql` — security fix: adds `get_my_role() = 'program_admin'` guard to all 15 program_admin RLS policies that were missing it. Root cause: migration 010 started setting org_id on resident profiles, which caused residents to match program_admin policies and see/modify other residents' data
 
 Status: Live in Supabase project fmwyajlsckmgjtclnypq
 
@@ -587,6 +623,15 @@ src/
       Sidebar.jsx                 # Role-based nav (dark slate), responsive drawer on mobile
       TopBar.jsx                  # Sticky header: hamburger (mobile), user name, sign out
     ProtectedRoute.jsx            # Blocks access if session missing or role doesn't match
+    modals/
+      AddEditModuleModal.jsx
+      AddEditTaskModal.jsx
+      AddEditResidentModal.jsx
+      ApplicationDetailModal.jsx
+      ArchiveOrganizationModal.jsx
+      CreateOrganizationModal.jsx
+      DeleteConfirmModal.jsx
+      EditOrganizationModal.jsx
   pages/
     LoginPage.jsx                 # Email + password login
     ForgotPasswordPage.jsx        # Send password reset email
@@ -594,9 +639,36 @@ src/
     dashboards/
       SuperAdminDashboard.jsx     # Uses AppLayout
       ProgramAdminDashboard.jsx   # Uses AppLayout
-      ResidentDashboard.jsx       # Uses AppLayout
+      ResidentDashboard.jsx       # Real stats via getMyStats(); overall progress bar
+    superadmin/
+      OrganizationsPage.jsx       # Org list; "View" drills into OrgDetailPage
+      OrgDetailPage.jsx           # /super-admin/organizations/:orgId — residents roster + Progress button
+      ProgramsPage.jsx
+    programadmin/
+      CurriculumPage.jsx          # Year-grouped module list; module descriptions on expand
+      ResidentsPage.jsx           # Resident list; invite flow; "Progress" button per resident
+      ApplicationsPage.jsx        # Applications with status tabs + ApplicationDetailModal
+      ResidentProgressPage.jsx    # /program-admin/residents/:residentId — read-only curriculum view
+                                  # Also rendered at /super-admin/organizations/:orgId/residents/:residentId
+                                  # Back destination driven by router state (from / fromLabel)
+    resident/
+      MyCurriculumPage.jsx        # Year-grouped modules; stacked progress bar + hover tooltip;
+                                  # module description on expand; task status dropdown + notes
+      EvaluationsPage.jsx         # Placeholder (Phase 8)
+      HandbookPage.jsx            # Placeholder (Phase 9)
   lib/
     supabase.js                   # Supabase client singleton
+    api/
+      organizations.js            # listOrganizations, getOrganization, CRUD, archive
+      programs.js                 # getProgramByOrgId, getProgramCurriculum, CRUD
+      modules.js                  # CRUD, moveModule
+      tasks.js                    # CRUD, moveTask
+      residents.js                # listResidents, getResidentById, createResident,
+                                  # updateResident, assignCurriculum, inviteResident
+      applications.js             # listApplications, createApplication, updateApplication,
+                                  # addInquiryLog, uploadApplicationFile, deleteApplicationFile
+      residentPortal.js           # getMyCurriculum, getResidentCurriculum, getMyStats,
+                                  # updateTaskStatus, updateTaskNotes, updateModuleStatus
   App.jsx                         # BrowserRouter + AuthProvider + Routes
   main.jsx                        # React root mount
   index.css                       # Tailwind v4 import

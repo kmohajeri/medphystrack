@@ -250,6 +250,11 @@ export default function MyCurriculumPage() {
                     {/* Task list */}
                     {isOpen && (
                       <div className="border-t border-slate-100">
+                        {rm.module?.description && (
+                          <div className="px-5 py-3 bg-slate-50 border-b border-slate-100">
+                            <p className="text-sm text-slate-600 leading-relaxed">{rm.module.description}</p>
+                          </div>
+                        )}
                         {rm.tasks.length === 0 ? (
                           <p className="px-6 py-3 text-sm text-slate-400">No tasks in this module.</p>
                         ) : (

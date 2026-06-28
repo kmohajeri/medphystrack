@@ -281,7 +281,7 @@ review and customize the copied curriculum after a new program is provisioned.
 | Phase 9 | Handbook (Dynamic PDF) | 🔲 Not started |
 | Phase 10 | Billing & Multi-Tenancy | 🔲 Not started |
 | Phase 11 | Support & Notifications | 🔲 Not started |
-| Phase 12 | Polish & Launch Prep | 🔲 Not started |
+| Phase 12 | Polish & Launch Prep + Archive/Delete (Residents & Applications) | 🔲 Not started |
 
 ---
 
@@ -312,6 +312,61 @@ review and customize the copied curriculum after a new program is provisioned.
 - Archive does not delete data — archived orgs/programs are hidden from active lists but data is preserved. No UI yet to view or restore archived records.
 - `provision_program` RPC takes ~15–20 seconds (copies 149 tasks). No loading indicator beyond button going disabled — acceptable for now, worth a spinner in a later polish phase.
 - The `ArchiveOrganizationModal` uses a type-to-confirm pattern (user must type the org name exactly). Same pattern not used for programs — the program archive modal uses a simple red button confirm. Inconsistency is intentional for now (orgs are higher stakes than programs).
+
+---
+
+### Phase 5 — Resident Management (Admin) — tested 2026-06-28
+
+**Method:** Playwright (Chromium, headed) against live Vite dev server (`npm run dev`) and the dev Supabase project. Account used: `kmohajeri@outlook.com` (program_admin).
+
+**How to re-run:** The test script lives at `phase5_test.mjs` in the project root (gitignored). Run with `node phase5_test.mjs` from the project root after starting the dev server.
+
+**What was tested:**
+
+| Area | Steps |
+|---|---|
+| Residents → Add | Add resident modal opens; fill first name, last name, email, start date; row appears in table with correct name and "Not assigned" curriculum status |
+| Residents → Assign curriculum | Click "Assign curriculum" inline button; `assign_curriculum` RPC fires; badge updates to "Assigned"; button disappears from row |
+| Residents → Edit | Edit modal opens; status selector visible (only in edit mode); change status to "graduated"; badge updates in table after save |
+| Residents → Hard nav | Resident data persists after full page reload of `/program-admin/residents` |
+| Applications → Page load | Page renders with status filter tabs (All / Inquiry / Pending / Approved / Declined) |
+| Applications → New | Inline form appears; fill first name, last name, email, notes; row appears in table with default status "inquiry" |
+| Applications → Filter tabs | Pending tab hides inquiry-status applications; Inquiry tab shows the new application; All tab restores full list |
+| Applications → Detail modal | "View" button opens detail modal; applicant name in header; Details section with status selector; Inquiry Log section; Files section |
+| Applications → Change status | Select "pending" in detail modal; save; no error displayed |
+| Applications → Inquiry log | Type note; click Add; note appears in log immediately |
+| Applications → Close + reflect | Close modal; row in list shows updated "pending" status badge |
+
+**Result:** PASS — 26/26 steps
+
+**Bugs found and fixed during testing:**
+- Initial test script used `rowsAfterAdd === initialRows + 1` row-count checks, which were flaky due to React re-render timing after async `load()` calls. Fixed by switching to `waitForSelector` on the unique test name instead.
+- `modal(page).locator('select')` caused a strict-mode violation in the detail modal because two `<select>` elements exist (status in Details section + file type in Files section). Fixed by scoping to `section:has-text("Details") select`.
+- `locator('text=Files')` matched both the `<h3>Files</h3>` heading and the "No files uploaded." paragraph (Playwright substring match). Fixed by narrowing to `h3:has-text("Files")`.
+
+**Known limitations / things not tested:**
+- File upload not automated — requires a real file and a browser file-picker dialog. The upload UI (file type selector + "Upload file" button) was visually confirmed to render. Requires the `application-files` Storage bucket to be created manually in Supabase dashboard (private, no size/MIME restrictions needed).
+- Resident records are created without a linked `auth.users` account — `user_id` is nullable for now. Linking a resident to a login account is deferred to Phase 6 (Resident Portal invite flow).
+- No delete for residents or applications — intentional for now. Soft archive/delete is scoped to Phase 12. In the meantime, setting a resident's status to `inactive` is the workaround for records added by mistake.
+
+---
+
+## Phase 12 Scope Notes
+
+In addition to general polish and launch prep, Phase 12 includes:
+
+### Archive / soft-delete for Residents and Applications
+Neither the Residents page nor the Applications page has a delete or archive action. This is intentional — deleting a resident who has curriculum assigned would cascade-delete all their `resident_modules` and `resident_tasks` records. The plan is a soft-delete/archive pattern consistent with how organizations and programs are handled (hidden from active lists, data preserved, restorable).
+
+**Residents:**
+- Add `archived_at` column to `residents` table (migration)
+- Add RLS/query filter to hide archived residents from normal list views
+- Add "Archive" action per row (with confirmation)
+- Add a toggle/tab to view archived residents
+
+**Applications:**
+- Add `archived_at` column to `applications` table (migration)
+- Same filter/archive/restore pattern as residents
 
 ---
 

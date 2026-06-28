@@ -291,7 +291,7 @@ export default function MyCurriculumPage() {
                                   .map((s) => (
                                     <div key={s.label} className="flex items-center gap-2 text-xs text-white">
                                       <span className={`h-2 w-2 flex-shrink-0 rounded-full ${s.color}`} />
-                                      <span>{s.count} {s.label.toLowerCase()}</span>
+                                      <span>{Math.round((s.count / progress.total) * 100)}% {s.label.toLowerCase()}</span>
                                     </div>
                                   ))}
                               </div>

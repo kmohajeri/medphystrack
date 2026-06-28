@@ -52,6 +52,17 @@ function taskProgress(tasks) {
   return { done, total: applicable.length };
 }
 
+function moduleProgress(tasks) {
+  if (!tasks || tasks.length === 0) return null;
+  const applicable = tasks.filter((t) => t.status !== 'not_applicable');
+  if (applicable.length === 0) return null;
+  const total = applicable.length;
+  const completed = applicable.filter((t) => t.status === 'completed').length;
+  const inProgress = applicable.filter((t) => t.status === 'in_progress').length;
+  const notStarted = total - completed - inProgress;
+  return { completed, inProgress, notStarted, total };
+}
+
 function groupByYear(modules) {
   const years = {};
   for (const rm of modules) {
@@ -218,33 +229,51 @@ export default function MyCurriculumPage() {
               {grouped[yearKey].map((rm) => {
                 const isOpen = expanded.has(rm.id);
                 const { done, total } = taskProgress(rm.tasks);
+                const progress = moduleProgress(rm.tasks);
 
                 return (
                   <div key={rm.id} className="overflow-hidden rounded-lg border border-slate-200 bg-white">
                     {/* Module header row */}
                     <button
                       onClick={() => toggleModule(rm.id)}
-                      className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-slate-50"
+                      className="flex w-full flex-col px-4 py-3 text-left hover:bg-slate-50"
                     >
-                      <div className="flex items-center gap-3 min-w-0">
-                        {/* Chevron */}
-                        <svg
-                          className={`h-4 w-4 flex-shrink-0 text-slate-400 transition-transform ${isOpen ? 'rotate-90' : ''}`}
-                          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" d="m9 18 6-6-6-6" />
-                        </svg>
-                        <span className="truncate text-sm font-medium text-slate-900">
-                          {rm.module?.name ?? 'Unnamed module'}
-                        </span>
+                      <div className="flex w-full items-center justify-between">
+                        <div className="flex items-center gap-3 min-w-0">
+                          {/* Chevron */}
+                          <svg
+                            className={`h-4 w-4 flex-shrink-0 text-slate-400 transition-transform ${isOpen ? 'rotate-90' : ''}`}
+                            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" d="m9 18 6-6-6-6" />
+                          </svg>
+                          <span className="truncate text-sm font-medium text-slate-900">
+                            {rm.module?.name ?? 'Unnamed module'}
+                          </span>
+                        </div>
+
+                        <div className="ml-4 flex flex-shrink-0 items-center gap-3">
+                          <span className="text-xs text-slate-500">{done} / {total} tasks</span>
+                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${MODULE_STATUS_BADGE[rm.status] ?? MODULE_STATUS_BADGE.not_started}`}>
+                            {MODULE_STATUS_LABEL[rm.status] ?? rm.status}
+                          </span>
+                        </div>
                       </div>
 
-                      <div className="ml-4 flex flex-shrink-0 items-center gap-3">
-                        <span className="text-xs text-slate-500">{done} / {total} tasks</span>
-                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${MODULE_STATUS_BADGE[rm.status] ?? MODULE_STATUS_BADGE.not_started}`}>
-                          {MODULE_STATUS_LABEL[rm.status] ?? rm.status}
-                        </span>
-                      </div>
+                      {/* Stacked progress bar */}
+                      {progress && (
+                        <div className="mt-2 flex h-1.5 w-full overflow-hidden rounded-full">
+                          {progress.completed > 0 && (
+                            <div className="bg-green-500" style={{ width: `${(progress.completed / progress.total) * 100}%` }} />
+                          )}
+                          {progress.inProgress > 0 && (
+                            <div className="bg-blue-400" style={{ width: `${(progress.inProgress / progress.total) * 100}%` }} />
+                          )}
+                          {progress.notStarted > 0 && (
+                            <div className="bg-slate-200" style={{ width: `${(progress.notStarted / progress.total) * 100}%` }} />
+                          )}
+                        </div>
+                      )}
                     </button>
 
                     {/* Task list */}

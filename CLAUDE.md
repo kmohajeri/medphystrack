@@ -378,7 +378,8 @@ review and customize the copied curriculum after a new program is provisioned.
 **Known limitations:**
 - Module descriptions shown on expand are pulled from `modules.description`. If a module has no description, nothing shows (by design).
 - Resident progress page is read-only for both program admin and super admin — task status can only be changed by the resident (intentional: completion record is the resident's attestation).
-- Phase 6 Playwright test not written — manual verification only.
+
+**Playwright test (drill-down functionality) — tested 2026-06-28:** 24/24 PASS. Program admin → Residents → Progress → read-only resident curriculum view (badges, no dropdowns, back nav). Super admin → Organizations → View → org detail (residents table + columns) → Progress → resident curriculum view (progress bar, back-to-org nav, back-to-organizations nav). Both sign-outs pass.
 
 ---
 

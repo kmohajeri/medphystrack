@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import AppLayout from '../../components/layout/AppLayout';
 import { getResidentById } from '../../lib/api/residents';
 import { getResidentCurriculum } from '../../lib/api/residentPortal';
@@ -75,7 +75,9 @@ function yearLabel(key) {
 
 export default function ResidentProgressPage() {
   const { residentId } = useParams();
-  const navigate = useNavigate();
+  const navigate  = useNavigate();
+  const location  = useLocation();
+  const { from = '/program-admin/residents', fromLabel = 'Back to Residents' } = location.state ?? {};
 
   const [resident, setResident]   = useState(null);
   const [modules, setModules]     = useState([]);
@@ -138,13 +140,13 @@ export default function ResidentProgressPage() {
     <AppLayout>
       {/* Back link */}
       <button
-        onClick={() => navigate('/program-admin/residents')}
+        onClick={() => navigate(from)}
         className="mb-4 flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700"
       >
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
         </svg>
-        Back to Residents
+        {fromLabel}
       </button>
 
       {/* Header */}

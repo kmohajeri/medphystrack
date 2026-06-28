@@ -1,5 +1,6 @@
 // src/pages/superadmin/OrganizationsPage.jsx
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { listOrganizations } from '../../lib/api/organizations';
 import CreateOrganizationModal from '../../components/modals/CreateOrganizationModal';
 import EditOrganizationModal from '../../components/modals/EditOrganizationModal';
@@ -7,6 +8,7 @@ import ArchiveOrganizationModal from '../../components/modals/ArchiveOrganizatio
 import AppLayout from '../../components/layout/AppLayout';
 
 export default function OrganizationsPage() {
+  const navigate = useNavigate();
   const [orgs, setOrgs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -99,8 +101,14 @@ export default function OrganizationsPage() {
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-3">
                       <button
-                        onClick={() => setEditingOrg(org)}
+                        onClick={() => navigate(`/super-admin/organizations/${org.id}`)}
                         className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                      >
+                        View
+                      </button>
+                      <button
+                        onClick={() => setEditingOrg(org)}
+                        className="text-sm font-medium text-slate-600 hover:text-slate-800"
                       >
                         Edit
                       </button>

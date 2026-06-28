@@ -8,6 +8,7 @@ import SuperAdminDashboard from './pages/dashboards/SuperAdminDashboard'
 import ProgramAdminDashboard from './pages/dashboards/ProgramAdminDashboard'
 import ResidentDashboard from './pages/dashboards/ResidentDashboard'
 import OrganizationsPage from './pages/superadmin/OrganizationsPage'
+import OrgDetailPage from './pages/superadmin/OrgDetailPage'
 import ProgramsPage from './pages/superadmin/ProgramsPage'
 import CurriculumPage from './pages/programadmin/CurriculumPage'
 import ResidentsPage from './pages/programadmin/ResidentsPage'
@@ -65,6 +66,22 @@ export default function App() {
             element={
               <ProtectedRoute allowedRole="super_admin">
                 <OrganizationsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/super-admin/organizations/:orgId"
+            element={
+              <ProtectedRoute allowedRole="super_admin">
+                <OrgDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/super-admin/organizations/:orgId/residents/:residentId"
+            element={
+              <ProtectedRoute allowedRole="super_admin">
+                <ResidentProgressPage />
               </ProtectedRoute>
             }
           />

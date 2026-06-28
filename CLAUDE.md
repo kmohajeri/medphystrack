@@ -274,7 +274,7 @@ review and customize the copied curriculum after a new program is provisioned.
 | Phase 2 | Authentication & User Roles | ✅ Complete |
 | Phase 3 | Frontend Scaffold | ✅ Complete |
 | Phase 4 | Program Management (Admin) | ✅ Complete |
-| Phase 5 | Resident Management (Admin) | 🔲 Not started |
+| Phase 5 | Resident Management (Admin) | ✅ Complete |
 | Phase 6 | Resident Portal | 🔲 Not started |
 | Phase 7 | Steering Committee (Admin) | 🔲 Not started |
 | Phase 8 | Module Evaluation | 🔲 Not started |

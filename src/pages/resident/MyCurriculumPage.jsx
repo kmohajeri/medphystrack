@@ -54,13 +54,12 @@ function taskProgress(tasks) {
 
 function moduleProgress(tasks) {
   if (!tasks || tasks.length === 0) return null;
-  const applicable = tasks.filter((t) => t.status !== 'not_applicable');
-  if (applicable.length === 0) return null;
-  const total = applicable.length;
-  const completed = applicable.filter((t) => t.status === 'completed').length;
-  const inProgress = applicable.filter((t) => t.status === 'in_progress').length;
-  const notStarted = total - completed - inProgress;
-  return { completed, inProgress, notStarted, total };
+  const total = tasks.length;
+  const completed  = tasks.filter((t) => t.status === 'completed').length;
+  const inProgress = tasks.filter((t) => t.status === 'in_progress').length;
+  const na         = tasks.filter((t) => t.status === 'not_applicable').length;
+  const notStarted = total - completed - inProgress - na;
+  return { completed, inProgress, notStarted, na, total };
 }
 
 function groupByYear(modules) {
@@ -271,6 +270,9 @@ export default function MyCurriculumPage() {
                           )}
                           {progress.notStarted > 0 && (
                             <div className="bg-slate-200" style={{ width: `${(progress.notStarted / progress.total) * 100}%` }} />
+                          )}
+                          {progress.na > 0 && (
+                            <div className="bg-slate-400" style={{ width: `${(progress.na / progress.total) * 100}%` }} />
                           )}
                         </div>
                       )}

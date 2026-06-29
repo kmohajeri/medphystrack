@@ -174,7 +174,7 @@ export default function ResidentsPage() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex justify-end gap-3">
-                        {!assigned && (
+                        {!assigned && r.status !== 'graduated' && (
                           <button
                             onClick={() => handleAssign(r.id)}
                             disabled={isAssigning}

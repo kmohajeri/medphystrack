@@ -4,7 +4,7 @@ export async function getMyResident() {
   const { data, error } = await supabase
     .from('residents')
     .select('*')
-    .single();
+    .maybeSingle();
   if (error) throw error;
   return data;
 }

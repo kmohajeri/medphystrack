@@ -73,7 +73,8 @@ function yearLabel(key) {
 
 function fmtDate(dateStr) {
   if (!dateStr) return null;
-  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 }
 
 // ── Main component ────────────────────────────────────────────────────────────

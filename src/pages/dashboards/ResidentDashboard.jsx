@@ -2,20 +2,35 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import AppLayout from '../../components/layout/AppLayout';
-import { getMyStats } from '../../lib/api/residentPortal';
+import { getMyStats, getMyResident } from '../../lib/api/residentPortal';
 
 export default function ResidentDashboard() {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
+  const [resident, setResident] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getMyStats()
-      .then(setStats)
+    Promise.all([getMyStats(), getMyResident().catch(() => null)])
+      .then(([s, r]) => { setStats(s); setResident(r); })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  function fmtDate(d) {
+    if (!d) return null;
+    const [y, m, day] = d.split('-').map(Number);
+    return new Date(y, m - 1, day).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  }
+
+  const startFmt = fmtDate(resident?.start_date);
+  const endFmt   = fmtDate(resident?.end_date);
+  const dateLabel = startFmt && endFmt
+    ? `${startFmt} – ${endFmt}`
+    : startFmt
+    ? `Started ${startFmt}`
+    : null;
 
   const pct = stats && stats.totalTasks > 0
     ? Math.round((stats.completedTasks / stats.totalTasks) * 100)
@@ -27,7 +42,9 @@ export default function ResidentDashboard() {
         <h1 className="text-xl font-semibold text-slate-900">
           Welcome{profile?.first_name ? `, ${profile.first_name}` : ''}
         </h1>
-        <p className="mt-1 text-sm text-slate-500">Your residency curriculum progress</p>
+        <p className="mt-1 text-sm text-slate-500">
+          {dateLabel ?? 'Your residency curriculum progress'}
+        </p>
       </div>
 
       {loading ? (

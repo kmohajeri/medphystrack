@@ -71,6 +71,11 @@ function yearLabel(key) {
   return key === 'unassigned' ? 'Unassigned' : `Year ${key}`;
 }
 
+function fmtDate(dateStr) {
+  if (!dateStr) return null;
+  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function ResidentProgressPage() {
@@ -155,8 +160,19 @@ export default function ResidentProgressPage() {
           <h1 className="text-xl font-semibold text-slate-900">
             {resident ? `${resident.first_name} ${resident.last_name}` : 'Resident'}
           </h1>
-          {resident?.email && (
-            <p className="mt-0.5 text-sm text-slate-500">{resident.email}</p>
+          {resident && (
+            <p className="mt-0.5 text-sm text-slate-500">
+              {[
+                resident.email,
+                fmtDate(resident.start_date) && fmtDate(resident.end_date)
+                  ? `${fmtDate(resident.start_date)} – ${fmtDate(resident.end_date)}`
+                  : fmtDate(resident.start_date)
+                  ? `Started ${fmtDate(resident.start_date)}`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+            </p>
           )}
         </div>
       </div>

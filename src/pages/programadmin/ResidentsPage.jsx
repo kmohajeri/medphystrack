@@ -151,7 +151,7 @@ export default function ResidentsPage() {
                         <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
                           Invite sent
                         </span>
-                      ) : (
+                      ) : r.status === 'active' ? (
                         <button
                           onClick={() => handleInvite(r)}
                           disabled={isInviting}
@@ -159,6 +159,8 @@ export default function ResidentsPage() {
                         >
                           {isInviting ? 'Sending…' : 'Send invite'}
                         </button>
+                      ) : (
+                        <span className="text-xs text-slate-400">—</span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-sm">

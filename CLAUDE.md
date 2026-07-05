@@ -401,10 +401,14 @@ review and customize the copied curriculum after a new program is provisioned.
 
 **Playwright test — tested 2026-07-05:** 15/15 PASS. Login → Steering Committee page → Members tab default → Add member (modal closes, row appears, Active badge) → Edit member (toggle inactive, badge updates) → Minutes tab → Add minutes (modal closes, row in list) → Expand row (notes visible) → Edit minutes (title update) → Delete minutes (row removed) → Sign out.
 
+**Playwright file upload test — tested 2026-07-05:** 11/11 PASS. Login → Minutes tab → Create minutes record → Open Edit modal → Upload file via `setInputFiles()` (bypasses native file-picker) → "1 file" badge appears in row header after save → Reopen Edit modal: file persists in file list → Remove file: filename disappears from modal → Save: "1 file" badge gone from header → Delete test record (cleanup) → Sign out. Test script: `phase7_file_test.mjs` (gitignored).
+
+**Storage RLS fix (migration 012):** File uploads were failing silently until `012_minutes_files_storage.sql` was applied. Without it, the `minutes-files` bucket had no RLS policies and all uploads were denied. Migration 012 adds super_admin (full access) and program_admin (scoped to own program via path segment [1] = program_id) policies, matching the pattern from `006_evaluation_files_storage.sql`.
+
 **Known limitations / things not tested:**
-- File upload not automated in Playwright (requires file-picker dialog). Upload UI confirmed to render. Requires `minutes-files` private Storage bucket created manually in Supabase dashboard.
 - File download opens a signed URL in a new tab — not tested in Playwright.
 - Inactive members are excluded from the attendee selector in new meetings. They remain visible (with "Inactive" label) in the edit modal only if they were previously attached to that meeting.
+- File upload is available only after the minutes record is initially saved (no upload on the "Add" modal, only on "Edit"). This is by design — a `minutes_id` is required to scope the storage path.
 
 ---
 

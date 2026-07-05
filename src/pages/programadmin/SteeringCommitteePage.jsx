@@ -83,9 +83,6 @@ export default function SteeringCommitteePage() {
     }
   }
 
-  const activeCount   = members.filter((m) => m.is_active).length;
-  const inactiveCount = members.filter((m) => !m.is_active).length;
-
   return (
     <AppLayout>
       <div className="flex items-start justify-between">
@@ -117,7 +114,7 @@ export default function SteeringCommitteePage() {
       <div className="mt-6 border-b border-slate-200">
         <nav className="-mb-px flex gap-6">
           {[
-            { id: 'members', label: `Members${members.length ? ` (${activeCount} active${inactiveCount ? `, ${inactiveCount} inactive` : ''})` : ''}` },
+            { id: 'members', label: `Members${members.length ? ` (${members.length})` : ''}` },
             { id: 'minutes', label: `Minutes${minutes.length ? ` (${minutes.length})` : ''}` },
           ].map((t) => (
             <button
@@ -184,6 +181,11 @@ export default function SteeringCommitteePage() {
 // ── Members Tab ───────────────────────────────────────────────────────────────
 
 function MembersTab({ members, onEdit }) {
+  const [filter, setFilter] = useState('active'); // 'active' | 'all'
+
+  const activeCount = members.filter((m) => m.is_active).length;
+  const visible     = filter === 'active' ? members.filter((m) => m.is_active) : members;
+
   if (members.length === 0) {
     return (
       <p className="mt-6 text-sm text-slate-500">
@@ -193,7 +195,31 @@ function MembersTab({ members, onEdit }) {
   }
 
   return (
-    <div className="mt-4 overflow-hidden rounded-lg border border-slate-200 bg-white">
+    <div className="mt-4">
+      {/* Filter tabs */}
+      <div className="mb-3 flex gap-2">
+        {[
+          { id: 'active', label: `Active (${activeCount})` },
+          { id: 'all',    label: `All (${members.length})` },
+        ].map((f) => (
+          <button
+            key={f.id}
+            onClick={() => setFilter(f.id)}
+            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+              filter === f.id
+                ? 'bg-indigo-600 text-white'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      {visible.length === 0 ? (
+        <p className="mt-2 text-sm text-slate-500">No inactive members.</p>
+      ) : (
+      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
       <table className="min-w-full divide-y divide-slate-200">
         <thead className="bg-slate-50">
           <tr>
@@ -206,7 +232,7 @@ function MembersTab({ members, onEdit }) {
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-200">
-          {members.map((m) => (
+          {visible.map((m) => (
             <tr key={m.id} className={!m.is_active ? 'opacity-60' : ''}>
               <td className="px-4 py-3 text-sm font-medium text-slate-900">{m.name}</td>
               <td className="px-4 py-3 text-sm text-slate-600">{m.role || <span className="text-slate-400">—</span>}</td>
@@ -231,6 +257,8 @@ function MembersTab({ members, onEdit }) {
           ))}
         </tbody>
       </table>
+      </div>
+      )}
     </div>
   );
 }

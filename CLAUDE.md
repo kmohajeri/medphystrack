@@ -75,12 +75,14 @@ supabase/migrations/010_resident_portal.sql
 supabase/migrations/011_fix_program_admin_rls.sql
 ```
 
-### 3. Create the Storage bucket (required before 006 RLS policies work)
-In the Supabase dashboard → Storage → New bucket:
-- **Name:** `evaluation-files`
-- **Public:** off (private)
+### 3. Create the Storage buckets
+In the Supabase dashboard → Storage → New bucket. All three buckets must be private:
 
-Do this before or immediately after running migration 006.
+| Bucket name | Required by | Notes |
+|---|---|---|
+| `evaluation-files` | Migration 006 | Create before or immediately after running 006 |
+| `application-files` | Migration 009 | For application file uploads |
+| `minutes-files` | Phase 7 UI | For steering committee meeting file attachments |
 
 ### 4. Seed the template curriculum
 Copy the template seed SQL (template_modules + template_tasks, the 13-module
@@ -279,7 +281,7 @@ review and customize the copied curriculum after a new program is provisioned.
 | Phase 4 | Program Management (Admin) | ✅ Complete |
 | Phase 5 | Resident Management (Admin) | ✅ Complete |
 | Phase 6 | Resident Portal | ✅ Complete |
-| Phase 7 | Steering Committee (Admin) | 🔲 Not started |
+| Phase 7 | Steering Committee (Admin) | ✅ Complete |
 | Phase 8 | Module Evaluation | 🔲 Not started |
 | Phase 9 | Handbook (Dynamic PDF) | 🔲 Not started |
 | Phase 10 | Billing & Multi-Tenancy | 🔲 Not started |
@@ -380,6 +382,29 @@ review and customize the copied curriculum after a new program is provisioned.
 - Resident progress page is read-only for both program admin and super admin — task status can only be changed by the resident (intentional: completion record is the resident's attestation).
 
 **Playwright test (drill-down functionality) — tested 2026-06-28:** 24/24 PASS. Program admin → Residents → Progress → read-only resident curriculum view (badges, no dropdowns, back nav). Super admin → Organizations → View → org detail (residents table + columns) → Progress → resident curriculum view (progress bar, back-to-org nav, back-to-organizations nav). Both sign-outs pass.
+
+---
+
+### Phase 7 — Steering Committee (Admin) — tested 2026-07-05
+
+**Method:** Playwright (Chromium, headed) against live Vite dev server. Account: `kmohajeri@outlook.com` (program_admin).
+
+**What was built:**
+
+| Feature | Description |
+|---|---|
+| Members tab | List of committee members with name, role, active/inactive badge, start/end dates; Add and Edit actions; inactive members shown at reduced opacity |
+| Minutes tab | List of meetings sorted by date descending; expandable rows showing attendee chips, notes (whitespace-preserved), and attached files; Add, Edit, Delete actions |
+| AddEditMemberModal | Name, role/title, start/end dates, active checkbox |
+| AddEditMinutesModal | Meeting date, title, notes textarea, attendee multi-select (active members only; inactive members shown if previously attached), file upload/remove (only available after initial save) |
+| File attachments | Uploaded to `minutes-files` private Storage bucket; signed URLs for download; remove button per file |
+
+**Playwright test — tested 2026-07-05:** 15/15 PASS. Login → Steering Committee page → Members tab default → Add member (modal closes, row appears, Active badge) → Edit member (toggle inactive, badge updates) → Minutes tab → Add minutes (modal closes, row in list) → Expand row (notes visible) → Edit minutes (title update) → Delete minutes (row removed) → Sign out.
+
+**Known limitations / things not tested:**
+- File upload not automated in Playwright (requires file-picker dialog). Upload UI confirmed to render. Requires `minutes-files` private Storage bucket created manually in Supabase dashboard.
+- File download opens a signed URL in a new tab — not tested in Playwright.
+- Inactive members are excluded from the attendee selector in new meetings. They remain visible (with "Inactive" label) in the edit modal only if they were previously attached to that meeting.
 
 ---
 
@@ -650,6 +675,7 @@ src/
       ResidentsPage.jsx           # Resident list; invite flow; "Progress" button per resident
       ApplicationsPage.jsx        # Applications with status tabs + ApplicationDetailModal
       ResidentProgressPage.jsx    # /program-admin/residents/:residentId — read-only curriculum view
+      SteeringCommitteePage.jsx   # /program-admin/committee — Members tab + Minutes tab
                                   # Also rendered at /super-admin/organizations/:orgId/residents/:residentId
                                   # Back destination driven by router state (from / fromLabel)
     resident/
@@ -668,6 +694,9 @@ src/
                                   # updateResident, assignCurriculum, inviteResident
       applications.js             # listApplications, createApplication, updateApplication,
                                   # addInquiryLog, uploadApplicationFile, deleteApplicationFile
+      committee.js                # listMembers, createMember, updateMember, listMinutes,
+                                  # createMinutes, updateMinutes, deleteMinutes, setAttendees,
+                                  # uploadMinutesFile, deleteMinutesFile, getMinutesFileUrl
       residentPortal.js           # getMyCurriculum, getResidentCurriculum, getMyStats,
                                   # updateTaskStatus, updateTaskNotes, updateModuleStatus
   App.jsx                         # BrowserRouter + AuthProvider + Routes

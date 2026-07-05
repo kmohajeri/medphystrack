@@ -14,6 +14,7 @@ import CurriculumPage from './pages/programadmin/CurriculumPage'
 import ResidentsPage from './pages/programadmin/ResidentsPage'
 import ApplicationsPage from './pages/programadmin/ApplicationsPage'
 import ResidentProgressPage from './pages/programadmin/ResidentProgressPage'
+import SteeringCommitteePage from './pages/programadmin/SteeringCommitteePage'
 import MyCurriculumPage from './pages/resident/MyCurriculumPage'
 import ResidentEvaluationsPage from './pages/resident/EvaluationsPage'
 import HandbookPage from './pages/resident/HandbookPage'
@@ -130,6 +131,14 @@ export default function App() {
             element={
               <ProtectedRoute allowedRole="program_admin">
                 <ApplicationsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/program-admin/committee"
+            element={
+              <ProtectedRoute allowedRole="program_admin">
+                <SteeringCommitteePage />
               </ProtectedRoute>
             }
           />

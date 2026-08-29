@@ -6,6 +6,7 @@ import CreateProgramModal from '../../components/modals/CreateProgramModal';
 import EditProgramModal from '../../components/modals/EditProgramModal';
 import ArchiveProgramModal from '../../components/modals/ArchiveProgramModal';
 import AppLayout from '../../components/layout/AppLayout';
+import Spinner from '../../components/Spinner';
 
 export default function ProgramsPage() {
   const [programs, setPrograms] = useState([]);
@@ -71,7 +72,7 @@ export default function ProgramsPage() {
 
       <div className="mt-6 overflow-hidden rounded-lg border border-slate-200 bg-white">
         {loading ? (
-          <p className="p-6 text-sm text-slate-500">Loading…</p>
+          <Spinner />
         ) : error ? (
           <p className="p-6 text-sm text-red-600">{error}</p>
         ) : programs.length === 0 ? (

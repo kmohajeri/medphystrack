@@ -4,6 +4,7 @@ import AppLayout from '../../components/layout/AppLayout';
 import { getProgramByOrgId } from '../../lib/api/programs';
 import { listApplications, createApplication } from '../../lib/api/applications';
 import ApplicationDetailModal from '../../components/modals/ApplicationDetailModal';
+import Spinner from '../../components/Spinner';
 
 const TABS = [
   { label: 'All',      value: null },
@@ -198,7 +199,7 @@ export default function ApplicationsPage() {
 
       <div className="mt-3 overflow-hidden rounded-lg border border-slate-200 bg-white">
         {loading ? (
-          <p className="p-6 text-sm text-slate-500">Loading…</p>
+          <Spinner />
         ) : !program ? (
           <p className="p-6 text-sm text-slate-500">No program found. Contact your Super Admin.</p>
         ) : applications.length === 0 ? (

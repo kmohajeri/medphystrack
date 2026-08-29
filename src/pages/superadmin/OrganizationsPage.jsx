@@ -6,6 +6,7 @@ import CreateOrganizationModal from '../../components/modals/CreateOrganizationM
 import EditOrganizationModal from '../../components/modals/EditOrganizationModal';
 import ArchiveOrganizationModal from '../../components/modals/ArchiveOrganizationModal';
 import AppLayout from '../../components/layout/AppLayout';
+import Spinner from '../../components/Spinner';
 
 export default function OrganizationsPage() {
   const navigate = useNavigate();
@@ -67,7 +68,7 @@ export default function OrganizationsPage() {
 
       <div className="mt-6 overflow-hidden rounded-lg border border-slate-200 bg-white">
         {loading ? (
-          <p className="p-6 text-sm text-slate-500">Loading…</p>
+          <Spinner />
         ) : error ? (
           <p className="p-6 text-sm text-red-600">{error}</p>
         ) : orgs.length === 0 ? (

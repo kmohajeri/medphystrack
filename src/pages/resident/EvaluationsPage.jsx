@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import AppLayout from '../../components/layout/AppLayout';
+import Spinner from '../../components/Spinner';
 import { getMyResident } from '../../lib/api/residentPortal';
 import {
   listMyEvaluations,
@@ -344,7 +345,7 @@ export default function EvaluationsPage() {
       )}
 
       {loading ? (
-        <p className="mt-6 text-sm text-slate-500">Loading…</p>
+        <Spinner />
       ) : !resident ? (
         <p className="mt-6 text-sm text-slate-500">No resident record found. Contact your program administrator.</p>
       ) : modules.length === 0 ? (

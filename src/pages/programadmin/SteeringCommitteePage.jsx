@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import AppLayout from '../../components/layout/AppLayout';
+import Spinner from '../../components/Spinner';
 import { getProgramByOrgId } from '../../lib/api/programs';
 import {
   listMembers, listMinutes, deleteMinutes,
@@ -133,7 +134,7 @@ export default function SteeringCommitteePage() {
       </div>
 
       {loading ? (
-        <p className="mt-6 text-sm text-slate-400">Loading…</p>
+        <Spinner />
       ) : !program ? (
         <p className="mt-6 text-sm text-slate-500">No program found. Contact your Super Admin.</p>
       ) : tab === 'members' ? (

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import AppLayout from '../../components/layout/AppLayout';
+import Spinner from '../../components/Spinner';
 import { getProgramByOrgId } from '../../lib/api/programs';
 import { listResidentsWithEvaluationSummary } from '../../lib/api/evaluations';
 
@@ -79,7 +80,7 @@ export default function EvaluationsOverviewPage() {
       )}
 
       {loading ? (
-        <p className="mt-6 text-sm text-slate-500">Loading…</p>
+        <Spinner />
       ) : residents.length === 0 ? (
         <p className="mt-6 text-sm text-slate-500">No residents found.</p>
       ) : (

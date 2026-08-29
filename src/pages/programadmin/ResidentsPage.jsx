@@ -6,6 +6,7 @@ import { getProgramByOrgId } from '../../lib/api/programs';
 import { listResidents, listArchivedResidents, assignCurriculum, inviteResident, archiveResident, restoreResident } from '../../lib/api/residents';
 import AddEditResidentModal from '../../components/modals/AddEditResidentModal';
 import DeleteConfirmModal from '../../components/modals/DeleteConfirmModal';
+import Spinner from '../../components/Spinner';
 
 const STATUS_BADGE = {
   active:    'bg-green-50 text-green-700',
@@ -150,7 +151,7 @@ export default function ResidentsPage() {
 
       <div className="mt-6 overflow-hidden rounded-lg border border-slate-200 bg-white">
         {loading ? (
-          <p className="p-6 text-sm text-slate-500">Loading…</p>
+          <Spinner />
         ) : !program ? (
           <p className="p-6 text-sm text-slate-500">No program found. Contact your Super Admin.</p>
         ) : residents.length === 0 ? (

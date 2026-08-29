@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import AppLayout from '../../components/layout/AppLayout';
+import Spinner from '../../components/Spinner';
 import AddEditEvaluationModal from '../../components/modals/AddEditEvaluationModal';
 import { getResidentById } from '../../lib/api/residents';
 import { listResidentModulesWithEvaluations } from '../../lib/api/evaluations';
@@ -95,7 +96,7 @@ export default function ResidentEvaluationsPage() {
       )}
 
       {loading ? (
-        <p className="mt-6 text-sm text-slate-500">Loading…</p>
+        <Spinner />
       ) : modules.length === 0 ? (
         <p className="mt-6 text-sm text-slate-500">No curriculum assigned to this resident.</p>
       ) : (

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import AppLayout from '../../components/layout/AppLayout';
+import Spinner from '../../components/Spinner';
 import { getResidentById } from '../../lib/api/residents';
 import { getResidentCurriculum } from '../../lib/api/residentPortal';
 
@@ -122,7 +123,7 @@ export default function ResidentProgressPage() {
   if (loading) {
     return (
       <AppLayout>
-        <p className="text-sm text-slate-400">Loading…</p>
+        <Spinner />
       </AppLayout>
     );
   }

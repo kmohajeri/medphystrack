@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import AppLayout from '../../components/layout/AppLayout';
+import Spinner from '../../components/Spinner';
 import { getProgramByOrgId, getProgramCurriculum } from '../../lib/api/programs';
 import { deleteModule, moveModule } from '../../lib/api/modules';
 import { deleteTask, moveTask } from '../../lib/api/tasks';
@@ -169,7 +170,7 @@ export default function CurriculumPage() {
 
       <div className="mt-6">
         {loading ? (
-          <p className="text-sm text-slate-500">Loading…</p>
+          <Spinner />
         ) : !program ? (
           <p className="text-sm text-slate-500">
             No program has been set up for your organization yet. Contact your

@@ -460,8 +460,9 @@ review and customize the copied curriculum after a new program is provisioned.
 | Migration 014 | `archived_at timestamptz` on `residents` and `applications`; applied directly to dev project via Supabase MCP |
 | `DeleteConfirmModal` | Added `confirmLabel` / `loadingLabel` props for reuse beyond delete actions |
 
+**Playwright test — tested 2026-08-29:** 25/25 PASS. Login → Residents → Archive button visible → Archive confirm modal (says "Archive", not "Delete", mentions data preserved) → confirm → resident gone from Active list → toggle to Archived → resident appears at reduced opacity with Restore button → Restore → resident back in Active list. Applications → Archived tab visible → open detail modal → "Archive application" footer link → inline confirm ("Archive this application?" / "Yes, archive" / "Cancel") → Cancel works → Yes, archive closes modal → Archived tab shows app → open archived app → banner + Restore button → Restore → app back in All tab. Probes: "New application" hidden on Archived tab ✓; "Add resident" hidden in Archived residents view ✓.
+
 **Known limitations:**
-- Not Playwright-tested — archive/restore flows should be manually verified before launch.
 - No bulk archive. One record at a time by design.
 - Archived residents with portal accounts retain their login — they just won't appear in admin lists. No auth account cleanup on archive (intentional: preserves audit trail).
 

@@ -184,12 +184,20 @@ export default function ResidentsPage() {
                           </button>
                         )}
                         {assigned && (
-                          <button
-                            onClick={() => navigate(`/program-admin/residents/${r.id}`)}
-                            className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
-                          >
-                            Progress
-                          </button>
+                          <>
+                            <button
+                              onClick={() => navigate(`/program-admin/residents/${r.id}`)}
+                              className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                            >
+                              Progress
+                            </button>
+                            <button
+                              onClick={() => navigate(`/program-admin/residents/${r.id}/evaluations`)}
+                              className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                            >
+                              Evaluations
+                            </button>
+                          </>
                         )}
                         <button
                           onClick={() => setEditing(r)}

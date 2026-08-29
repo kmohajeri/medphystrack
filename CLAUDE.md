@@ -73,6 +73,8 @@ supabase/migrations/008_provision_program_rpc.sql
 supabase/migrations/009_assign_curriculum_rpc.sql
 supabase/migrations/010_resident_portal.sql
 supabase/migrations/011_fix_program_admin_rls.sql
+supabase/migrations/012_minutes_files_storage.sql
+supabase/migrations/013_evaluation_files_rls_fix.sql
 ```
 
 ### 3. Create the Storage buckets
@@ -282,7 +284,7 @@ review and customize the copied curriculum after a new program is provisioned.
 | Phase 5 | Resident Management (Admin) | ✅ Complete |
 | Phase 6 | Resident Portal | ✅ Complete |
 | Phase 7 | Steering Committee (Admin) | ✅ Complete |
-| Phase 8 | Module Evaluation | 🔲 Not started |
+| Phase 8 | Module Evaluation | ✅ Complete |
 | Phase 9 | Handbook (Dynamic PDF) | 🔲 Not started |
 | Phase 10 | Billing & Multi-Tenancy | 🔲 Not started |
 | Phase 11 | Support & Notifications | 🔲 Not started |
@@ -412,6 +414,38 @@ review and customize the copied curriculum after a new program is provisioned.
 
 ---
 
+### Phase 8 — Module Evaluation — tested 2026-07-19
+
+**Method:** Playwright (Chromium, headed) against live Vite dev server. Accounts: `kmohajeri@outlook.com` (program_admin), `kayhan.mohajeri+resident@gmail.com` (resident).
+
+**What was built:**
+
+| Feature | Description |
+|---|---|
+| `evaluations.js` API | `listResidentModulesWithEvaluations`, `listResidentsWithEvaluationSummary`, `createEvaluation`, `updateEvaluation`, `signOffEvaluation`, `listMyEvaluations`, `acknowledgeEvaluation`, `updateResidentComments`, `uploadEvaluationFile`, `deleteEvaluationFile`, `getEvaluationFileUrl` |
+| ResidentEvaluationsPage | `/program-admin/residents/:residentId/evaluations` — year-grouped table; Competencies/Reading/Oral chips per row; Create or Edit button per module |
+| AddEditEvaluationModal | `BooleanToggle` tri-state (null/Yes/No); oral exam select (pass/conditional_pass/fail); faculty comments textarea; signed-off banner + read-only mode after faculty sign; sign-off confirm dialog; resident response section (read-only for admin) |
+| EvaluationsOverviewPage | `/program-admin/evaluations` (sidebar link) — stats cards; expandable resident cards with evaluation summary table; "Manage →" link per resident |
+| Resident EvaluationsPage | `/resident/evaluations` — year-grouped module cards; faculty assessment display; resident comments textarea (auto-save 800ms debounce); file upload section (pre-sign only); Acknowledge & Sign Off button (amber banner, post-sign only); Approved confirmation text |
+| Evaluations button | Added to ResidentsPage next to "Progress" for assigned residents |
+| RLS fix (migration 013) | Added `get_my_role() = 'program_admin'` guards to `evaluation_files` program_admin SELECT and DELETE policies that were missing them (created in migration 005 without role check) |
+
+**Playwright test — tested 2026-07-19:** 41/41 PASS. Login → Residents → Evaluations button → ResidentEvaluationsPage → Create → fill scores + comment → Save → Edit → verify pre-fill → Sign Off → confirm → read-only modal → sidebar Evaluations overview → sign out → login as resident → Evaluations page → expand signed card → verify faculty scores → add comment (card stays open) → Acknowledge → Approved status + confirmation → sign out.
+
+**Bugs found and fixed during testing:**
+- **Evaluation_files RLS missing role guard (migration 013)**: `program_admin` policies on `evaluation_files` table created in migration 005 were missing the `get_my_role() = 'program_admin'` guard, consistent with the migration 011 pattern for other tables.
+- **Card collapse on comment auto-save**: `handleCommentsChange` called `onUpdated()` → parent `load()` → cards re-rendered with `open=false`. Fixed by lifting `openIds` Set to parent `EvaluationsPage`, passing `isOpen`/`onToggle` props, and removing `onUpdated()` from the auto-save path (comments-only save doesn't need a data reload).
+- **Test targeting wrong "Edit" row**: Prior test runs leave signed evaluations in the DB, creating multiple "Edit" rows. Fixed by (1) capturing module name before clicking Create, (2) re-locating the row post-save by module name via `td:has-text()`, (3) sorting nested evaluations newest-first in the API.
+- **Stale `createRow` locator**: Row-tracking locator using `has: button:has-text("Create")` stopped matching after Save changed the button to "Edit". Fixed by module-name-based re-location.
+
+**Known limitations / things not tested:**
+- File upload to `evaluation-files` bucket not automated — requires a real file. Bucket must exist as a private bucket in Supabase dashboard. Upload UI (file type select + "Upload file" label) was not tested in this run.
+- Faculty sign-off locks resident file uploads (correct behavior) — not explicitly tested.
+- Resident comments textarea is hidden (replaced by read-only text) after acknowledgment — visually confirmed in prior manual run.
+- One evaluation per module per resident is the current UX assumption; the schema supports multiple but the UI only shows/creates the most recent.
+
+---
+
 ## Phase 12 Scope Notes
 
 In addition to general polish and launch prep, Phase 12 includes:
@@ -517,6 +551,8 @@ Migration files: `supabase/migrations/`
 - `009_assign_curriculum_rpc.sql` — `assign_curriculum` RPC: copies program modules/tasks into per-resident instances (copy-on-assign pattern); also adds application-files Storage RLS policies
 - `010_resident_portal.sql` — extends `handle_new_user()` trigger to auto-link `residents.user_id` by email and pre-fill profile (role, org_id, name) on resident account creation; adds `resident: update own resident_modules` RLS policy
 - `011_fix_program_admin_rls.sql` — security fix: adds `get_my_role() = 'program_admin'` guard to all 15 program_admin RLS policies that were missing it. Root cause: migration 010 started setting org_id on resident profiles, which caused residents to match program_admin policies and see/modify other residents' data
+- `012_minutes_files_storage.sql` — RLS policies on storage.objects for the minutes-files bucket (super_admin full access; program_admin scoped to own program via path segment [1] = program_id)
+- `013_evaluation_files_rls_fix.sql` — security fix: adds `get_my_role() = 'program_admin'` guard to evaluation_files program_admin SELECT and DELETE policies that were missing it (created in migration 005 without role check)
 
 Status: Live in Supabase project fmwyajlsckmgjtclnypq
 

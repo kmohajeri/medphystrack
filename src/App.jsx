@@ -15,8 +15,10 @@ import ResidentsPage from './pages/programadmin/ResidentsPage'
 import ApplicationsPage from './pages/programadmin/ApplicationsPage'
 import ResidentProgressPage from './pages/programadmin/ResidentProgressPage'
 import SteeringCommitteePage from './pages/programadmin/SteeringCommitteePage'
+import ResidentEvaluationsPage from './pages/programadmin/ResidentEvaluationsPage'
+import EvaluationsOverviewPage from './pages/programadmin/EvaluationsOverviewPage'
 import MyCurriculumPage from './pages/resident/MyCurriculumPage'
-import ResidentEvaluationsPage from './pages/resident/EvaluationsPage'
+import MyEvaluationsPage from './pages/resident/EvaluationsPage'
 import HandbookPage from './pages/resident/HandbookPage'
 
 function RootRedirect() {
@@ -127,6 +129,22 @@ export default function App() {
             }
           />
           <Route
+            path="/program-admin/evaluations"
+            element={
+              <ProtectedRoute allowedRole="program_admin">
+                <EvaluationsOverviewPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/program-admin/residents/:residentId/evaluations"
+            element={
+              <ProtectedRoute allowedRole="program_admin">
+                <ResidentEvaluationsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/program-admin/applications"
             element={
               <ProtectedRoute allowedRole="program_admin">
@@ -162,7 +180,7 @@ export default function App() {
             path="/resident/evaluations"
             element={
               <ProtectedRoute allowedRole="resident">
-                <ResidentEvaluationsPage />
+                <MyEvaluationsPage />
               </ProtectedRoute>
             }
           />

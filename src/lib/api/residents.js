@@ -69,7 +69,7 @@ export async function inviteResident(email) {
 export async function getResidentById(residentId) {
   const { data, error } = await supabase
     .from('residents')
-    .select('id, first_name, last_name, email, start_date, end_date, status')
+    .select('id, first_name, last_name, email, start_date, end_date, status, program_id')
     .eq('id', residentId)
     .single();
   if (error) throw error;

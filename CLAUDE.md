@@ -289,7 +289,7 @@ review and customize the copied curriculum after a new program is provisioned.
 | Phase 9 | Handbook (Dynamic PDF) | 🔲 Not started |
 | Phase 10 | Billing & Multi-Tenancy | 🔲 Not started |
 | Phase 11 | Support & Notifications | 🔲 Not started |
-| Phase 12 | Polish & Launch Prep + Archive/Delete (Residents & Applications) | 🔄 In Progress |
+| Phase 12 | Polish & Launch Prep + Archive/Delete (Residents & Applications) | ✅ Complete |
 
 ---
 
@@ -465,6 +465,27 @@ review and customize the copied curriculum after a new program is provisioned.
 **Known limitations:**
 - No bulk archive. One record at a time by design.
 - Archived residents with portal accounts retain their login — they just won't appear in admin lists. No auth account cleanup on archive (intentional: preserves audit trail).
+
+---
+
+### Polish Pass — completed 2026-08-29
+
+**What was done:**
+
+| Area | Change |
+|---|---|
+| Spinner component | Created `src/components/Spinner.jsx`; added to all 13 pages that had bare loading text |
+| Dashboard pages | `ProgramAdminDashboard` and `SuperAdminDashboard` rewritten with real data (residents, applications, orgs); `ResidentDashboard` updated with Spinner |
+| Auth pages | `LoginPage`, `ForgotPasswordPage`, `ResetPasswordPage` migrated from `blue-*`/`gray-*` to `indigo-*`/`slate-*` Tailwind classes |
+| TopBar | Avatar changed from `bg-blue-600` to `bg-indigo-600`; all `gray-*` → `slate-*`; visible on every page |
+| AppLayout | Background `bg-gray-50` → `bg-slate-50` |
+| App.jsx RootRedirect | Spinner color `blue-600` → `indigo-600`, background `gray-50` → `slate-50` |
+| Sidebar | Removed dead nav links (Template Library, Users) that had no routes and showed blank pages |
+| 404 page | Added `NotFoundPage`; catch-all route now renders it instead of redirecting to `/` |
+| HandbookPage | Replaced "Phase 9" placeholder with clean empty state (book SVG + message) |
+| MyCurriculumPage | Replaced bare loading text with Spinner |
+
+**Net result:** All 15 user-facing pages now use consistent indigo/slate color scheme. No blank pages on navigation. Clean empty states everywhere.
 
 ---
 

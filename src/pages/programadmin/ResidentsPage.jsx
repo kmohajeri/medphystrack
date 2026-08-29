@@ -3,8 +3,9 @@ import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import AppLayout from '../../components/layout/AppLayout';
 import { getProgramByOrgId } from '../../lib/api/programs';
-import { listResidents, assignCurriculum, inviteResident } from '../../lib/api/residents';
+import { listResidents, listArchivedResidents, assignCurriculum, inviteResident, archiveResident, restoreResident } from '../../lib/api/residents';
 import AddEditResidentModal from '../../components/modals/AddEditResidentModal';
+import DeleteConfirmModal from '../../components/modals/DeleteConfirmModal';
 
 const STATUS_BADGE = {
   active:    'bg-green-50 text-green-700',
@@ -24,6 +25,7 @@ export default function ResidentsPage() {
   const [residents, setResidents]       = useState([]);
   const [loading, setLoading]           = useState(true);
   const [error, setError]               = useState(null);
+  const [showArchived, setShowArchived]   = useState(false);
   const [addOpen, setAddOpen]           = useState(false);
   const [editing, setEditing]           = useState(null);
   const [assigning, setAssigning]       = useState(null);
@@ -31,13 +33,18 @@ export default function ResidentsPage() {
   const [inviting, setInviting]         = useState(null);  // resident id being invited
   const [invitedSet, setInvitedSet]     = useState(new Set()); // ids sent this session
   const [inviteError, setInviteError]   = useState(null);
+  const [archiving, setArchiving]       = useState(null);  // resident to confirm archive
+  const [archiveLoading, setArchiveLoading] = useState(false);
+  const [restoring, setRestoring]       = useState(null);  // resident id being restored
 
   async function load() {
     setLoading(true);
     setError(null);
     try {
       const prog = await getProgramByOrgId(profile.org_id);
-      const data = await listResidents(prog.id);
+      const data = showArchived
+        ? await listArchivedResidents(prog.id)
+        : await listResidents(prog.id);
       setProgram(prog);
       setResidents(data);
     } catch (err) {
@@ -47,7 +54,34 @@ export default function ResidentsPage() {
     }
   }
 
-  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); }, [showArchived]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function handleArchive() {
+    if (!archiving) return;
+    setArchiveLoading(true);
+    try {
+      await archiveResident(archiving.id);
+      setArchiving(null);
+      await load();
+    } catch (err) {
+      setError(err.message || 'Failed to archive resident');
+      setArchiving(null);
+    } finally {
+      setArchiveLoading(false);
+    }
+  }
+
+  async function handleRestore(residentId) {
+    setRestoring(residentId);
+    try {
+      await restoreResident(residentId);
+      await load();
+    } catch (err) {
+      setError(err.message || 'Failed to restore resident');
+    } finally {
+      setRestoring(null);
+    }
+  }
 
   async function handleAssign(residentId) {
     setAssigning(residentId);
@@ -82,14 +116,26 @@ export default function ResidentsPage() {
           <h1 className="text-xl font-semibold text-slate-900">Residents</h1>
           {program && <p className="mt-1 text-sm text-slate-500">{program.name}</p>}
         </div>
-        {program && (
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => setAddOpen(true)}
-            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+            onClick={() => setShowArchived((v) => !v)}
+            className={`rounded-md px-3 py-2 text-sm font-medium border transition-colors ${
+              showArchived
+                ? 'bg-slate-800 text-white border-slate-800'
+                : 'border-slate-300 text-slate-600 hover:bg-slate-50'
+            }`}
           >
-            Add resident
+            {showArchived ? 'Archived' : 'Active'}
           </button>
-        )}
+          {program && !showArchived && (
+            <button
+              onClick={() => setAddOpen(true)}
+              className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+            >
+              Add resident
+            </button>
+          )}
+        </div>
       </div>
 
       {error && (
@@ -108,7 +154,9 @@ export default function ResidentsPage() {
         ) : !program ? (
           <p className="p-6 text-sm text-slate-500">No program found. Contact your Super Admin.</p>
         ) : residents.length === 0 ? (
-          <p className="p-6 text-sm text-slate-500">No residents yet. Click "Add resident" to get started.</p>
+          <p className="p-6 text-sm text-slate-500">
+            {showArchived ? 'No archived residents.' : 'No residents yet. Click "Add resident" to get started.'}
+          </p>
         ) : (
           <table className="min-w-full divide-y divide-slate-200">
             <thead className="bg-slate-50">
@@ -129,9 +177,10 @@ export default function ResidentsPage() {
                 const isAssigning = assigning === r.id;
                 const isInviting  = inviting === r.id;
                 const justInvited = invitedSet.has(r.id);
+                const isRestoring = restoring === r.id;
 
                 return (
-                  <tr key={r.id}>
+                  <tr key={r.id} className={showArchived ? 'opacity-60' : undefined}>
                     <td className="px-4 py-3 text-sm font-medium text-slate-900">
                       {r.first_name} {r.last_name}
                     </td>
@@ -143,7 +192,9 @@ export default function ResidentsPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-sm">
-                      {hasAccount ? (
+                      {showArchived ? (
+                        <span className="text-xs text-slate-400">—</span>
+                      ) : hasAccount ? (
                         <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
                           Active
                         </span>
@@ -174,37 +225,55 @@ export default function ResidentsPage() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex justify-end gap-3">
-                        {!assigned && r.status === 'active' && (
+                        {showArchived ? (
                           <button
-                            onClick={() => handleAssign(r.id)}
-                            disabled={isAssigning}
+                            onClick={() => handleRestore(r.id)}
+                            disabled={isRestoring}
                             className="text-sm font-medium text-indigo-600 hover:text-indigo-700 disabled:opacity-50"
                           >
-                            {isAssigning ? 'Assigning…' : 'Assign curriculum'}
+                            {isRestoring ? 'Restoring…' : 'Restore'}
                           </button>
-                        )}
-                        {assigned && (
+                        ) : (
                           <>
+                            {!assigned && r.status === 'active' && (
+                              <button
+                                onClick={() => handleAssign(r.id)}
+                                disabled={isAssigning}
+                                className="text-sm font-medium text-indigo-600 hover:text-indigo-700 disabled:opacity-50"
+                              >
+                                {isAssigning ? 'Assigning…' : 'Assign curriculum'}
+                              </button>
+                            )}
+                            {assigned && (
+                              <>
+                                <button
+                                  onClick={() => navigate(`/program-admin/residents/${r.id}`)}
+                                  className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                                >
+                                  Progress
+                                </button>
+                                <button
+                                  onClick={() => navigate(`/program-admin/residents/${r.id}/evaluations`)}
+                                  className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                                >
+                                  Evaluations
+                                </button>
+                              </>
+                            )}
                             <button
-                              onClick={() => navigate(`/program-admin/residents/${r.id}`)}
-                              className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                              onClick={() => setEditing(r)}
+                              className="text-sm font-medium text-slate-600 hover:text-slate-800"
                             >
-                              Progress
+                              Edit
                             </button>
                             <button
-                              onClick={() => navigate(`/program-admin/residents/${r.id}/evaluations`)}
-                              className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                              onClick={() => setArchiving(r)}
+                              className="text-sm font-medium text-red-500 hover:text-red-700"
                             >
-                              Evaluations
+                              Archive
                             </button>
                           </>
                         )}
-                        <button
-                          onClick={() => setEditing(r)}
-                          className="text-sm font-medium text-slate-600 hover:text-slate-800"
-                        >
-                          Edit
-                        </button>
                       </div>
                     </td>
                   </tr>
@@ -231,6 +300,17 @@ export default function ResidentsPage() {
           orgId={profile.org_id}
           onClose={() => setEditing(null)}
           onSaved={() => { setEditing(null); load(); }}
+        />
+      )}
+
+      {archiving && (
+        <DeleteConfirmModal
+          title="Archive resident?"
+          message={`${archiving.first_name} ${archiving.last_name}'s record will be hidden from the active list. Their curriculum data is preserved and can be restored at any time.`}
+          confirmLabel="Archive"
+          loading={archiveLoading}
+          onConfirm={handleArchive}
+          onClose={() => setArchiving(null)}
         />
       )}
     </AppLayout>

@@ -3,12 +3,41 @@ import { supabase } from '../supabase';
 export async function listResidents(programId) {
   const { data, error } = await supabase
     .from('residents')
-    .select('id, first_name, last_name, email, start_date, end_date, status, user_id, created_at, resident_modules(id)')
+    .select('id, first_name, last_name, email, start_date, end_date, status, user_id, created_at, archived_at, resident_modules(id)')
     .eq('program_id', programId)
+    .is('archived_at', null)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
   return data;
+}
+
+export async function listArchivedResidents(programId) {
+  const { data, error } = await supabase
+    .from('residents')
+    .select('id, first_name, last_name, email, start_date, end_date, status, user_id, created_at, archived_at, resident_modules(id)')
+    .eq('program_id', programId)
+    .not('archived_at', 'is', null)
+    .order('archived_at', { ascending: false });
+
+  if (error) throw error;
+  return data;
+}
+
+export async function archiveResident(residentId) {
+  const { error } = await supabase
+    .from('residents')
+    .update({ archived_at: new Date().toISOString() })
+    .eq('id', residentId);
+  if (error) throw error;
+}
+
+export async function restoreResident(residentId) {
+  const { error } = await supabase
+    .from('residents')
+    .update({ archived_at: null })
+    .eq('id', residentId);
+  if (error) throw error;
 }
 
 export async function createResident({ orgId, programId, firstName, lastName, email, startDate, endDate }) {

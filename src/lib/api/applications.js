@@ -3,15 +3,36 @@ import { supabase } from '../supabase';
 export async function listApplications(programId, { status } = {}) {
   let query = supabase
     .from('applications')
-    .select('id, first_name, last_name, email, status, notes, created_at')
+    .select('id, first_name, last_name, email, status, notes, created_at, archived_at')
     .eq('program_id', programId)
     .order('created_at', { ascending: false });
 
-  if (status) query = query.eq('status', status);
+  if (status === 'archived') {
+    query = query.not('archived_at', 'is', null);
+  } else {
+    query = query.is('archived_at', null);
+    if (status) query = query.eq('status', status);
+  }
 
   const { data, error } = await query;
   if (error) throw error;
   return data;
+}
+
+export async function archiveApplication(id) {
+  const { error } = await supabase
+    .from('applications')
+    .update({ archived_at: new Date().toISOString() })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+export async function restoreApplication(id) {
+  const { error } = await supabase
+    .from('applications')
+    .update({ archived_at: null })
+    .eq('id', id);
+  if (error) throw error;
 }
 
 export async function createApplication({ orgId, programId, firstName, lastName, email, notes }) {

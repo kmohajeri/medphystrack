@@ -8,6 +8,8 @@ import {
   uploadApplicationFile,
   deleteApplicationFile,
   getFileUrl,
+  archiveApplication,
+  restoreApplication,
 } from '../../lib/api/applications';
 
 const STATUS_OPTIONS = ['inquiry', 'pending', 'approved', 'declined'];
@@ -52,6 +54,11 @@ export default function ApplicationDetailModal({ application: initialApp, progra
   const [uploading, setUploading] = useState(false);
   const [fileError, setFileError] = useState(null);
   const fileInputRef = useRef(null);
+
+  const isArchived = !!app.archived_at;
+  const [archiveAction, setArchiveAction] = useState(false);  // show confirm row
+  const [archiveLoading, setArchiveLoading] = useState(false);
+  const [archiveError, setArchiveError] = useState(null);
 
   useEffect(() => {
     async function fetchLogs() {
@@ -138,6 +145,23 @@ export default function ApplicationDetailModal({ application: initialApp, progra
       setFiles((prev) => prev.filter((x) => x.id !== f.id));
     } catch {
       // non-fatal
+    }
+  }
+
+  async function handleArchiveToggle() {
+    setArchiveLoading(true);
+    setArchiveError(null);
+    try {
+      if (isArchived) {
+        await restoreApplication(app.id);
+      } else {
+        await archiveApplication(app.id);
+      }
+      onChanged();
+      onClose();
+    } catch (err) {
+      setArchiveError(err.message || 'Action failed');
+      setArchiveLoading(false);
     }
   }
 
@@ -302,6 +326,50 @@ export default function ApplicationDetailModal({ application: initialApp, progra
             </div>
             {fileError && <p className="mt-2 text-sm text-red-600">{fileError}</p>}
           </section>
+        </div>
+
+        {/* Archive / Restore footer */}
+        <div className="border-t border-slate-100 px-6 py-3 flex-shrink-0">
+          {isArchived ? (
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-slate-400">This application is archived.</span>
+              <button
+                onClick={handleArchiveToggle}
+                disabled={archiveLoading}
+                className="text-sm font-medium text-indigo-600 hover:text-indigo-700 disabled:opacity-50"
+              >
+                {archiveLoading ? 'Restoring…' : 'Restore'}
+              </button>
+            </div>
+          ) : archiveAction ? (
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-slate-600">Archive this application?</span>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => { setArchiveAction(false); setArchiveError(null); }}
+                  disabled={archiveLoading}
+                  className="text-sm font-medium text-slate-500 hover:text-slate-700"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleArchiveToggle}
+                  disabled={archiveLoading}
+                  className="text-sm font-medium text-red-600 hover:text-red-700 disabled:opacity-50"
+                >
+                  {archiveLoading ? 'Archiving…' : 'Yes, archive'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setArchiveAction(true)}
+              className="text-sm font-medium text-slate-400 hover:text-red-600 transition-colors"
+            >
+              Archive application
+            </button>
+          )}
+          {archiveError && <p className="mt-1 text-xs text-red-600">{archiveError}</p>}
         </div>
       </div>
     </div>

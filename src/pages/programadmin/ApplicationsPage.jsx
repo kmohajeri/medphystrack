@@ -11,6 +11,7 @@ const TABS = [
   { label: 'Pending',  value: 'pending' },
   { label: 'Approved', value: 'approved' },
   { label: 'Declined', value: 'declined' },
+  { label: 'Archived', value: 'archived' },
 ];
 
 const STATUS_BADGE = {
@@ -92,7 +93,7 @@ export default function ApplicationsPage() {
           <h1 className="text-xl font-semibold text-slate-900">Applications</h1>
           {program && <p className="mt-1 text-sm text-slate-500">{program.name}</p>}
         </div>
-        {program && (
+        {program && activeTab !== 'archived' && (
           <button
             onClick={() => setShowNew(true)}
             className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
@@ -202,7 +203,7 @@ export default function ApplicationsPage() {
           <p className="p-6 text-sm text-slate-500">No program found. Contact your Super Admin.</p>
         ) : applications.length === 0 ? (
           <p className="p-6 text-sm text-slate-500">
-            {activeTab ? `No ${activeTab} applications.` : 'No applications yet.'}
+            {activeTab === 'archived' ? 'No archived applications.' : activeTab ? `No ${activeTab} applications.` : 'No applications yet.'}
           </p>
         ) : (
           <table className="min-w-full divide-y divide-slate-200">

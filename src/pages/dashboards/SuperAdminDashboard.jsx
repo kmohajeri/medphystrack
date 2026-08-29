@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppLayout from '../../components/layout/AppLayout';
+import Spinner from '../../components/Spinner';
 import { listOrganizations } from '../../lib/api/organizations';
 
 function StatCard({ label, value, sub }) {
@@ -43,7 +44,7 @@ export default function SuperAdminDashboard() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-slate-400">Loading…</p>
+        <Spinner />
       ) : (
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import AppLayout from '../../components/layout/AppLayout';
+import Spinner from '../../components/Spinner';
 import { getOrganization } from '../../lib/api/organizations';
 import { getProgramByOrgId } from '../../lib/api/programs';
 import { listResidents } from '../../lib/api/residents';
@@ -61,7 +62,7 @@ export default function OrgDetailPage() {
       </button>
 
       {loading ? (
-        <p className="text-sm text-slate-400">Loading…</p>
+        <Spinner />
       ) : error ? (
         <div className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
       ) : (

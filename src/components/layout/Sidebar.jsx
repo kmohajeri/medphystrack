@@ -17,11 +17,9 @@ const I = {
 
 const NAV = {
   super_admin: [
-    { label: 'Dashboard',        path: '/super-admin',               icon: I.grid,    exact: true },
-    { label: 'Organizations',    path: '/super-admin/organizations',  icon: I.building },
-    { label: 'Programs',         path: '/super-admin/programs',       icon: I.cap },
-    { label: 'Template Library', path: '/super-admin/templates',      icon: I.book },
-    { label: 'Users',            path: '/super-admin/users',          icon: I.users },
+    { label: 'Dashboard',     path: '/super-admin',              icon: I.grid,    exact: true },
+    { label: 'Organizations', path: '/super-admin/organizations', icon: I.building },
+    { label: 'Programs',      path: '/super-admin/programs',      icon: I.cap },
   ],
   program_admin: [
     { label: 'Dashboard',          path: '/program-admin',                 icon: I.grid,  exact: true },

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import AppLayout from '../../components/layout/AppLayout';
+import Spinner from '../../components/Spinner';
 import { getProgramByOrgId } from '../../lib/api/programs';
 import { listResidents } from '../../lib/api/residents';
 import { listApplications } from '../../lib/api/applications';
@@ -60,7 +61,7 @@ export default function ProgramAdminDashboard() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-slate-400">Loading…</p>
+        <Spinner />
       ) : (
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

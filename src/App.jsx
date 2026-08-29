@@ -20,6 +20,7 @@ import EvaluationsOverviewPage from './pages/programadmin/EvaluationsOverviewPag
 import MyCurriculumPage from './pages/resident/MyCurriculumPage'
 import MyEvaluationsPage from './pages/resident/EvaluationsPage'
 import HandbookPage from './pages/resident/HandbookPage'
+import NotFoundPage from './pages/NotFoundPage'
 
 function RootRedirect() {
   const { session, profile, loading } = useAuth()
@@ -194,7 +195,7 @@ export default function App() {
           />
 
           {/* Catch-all */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

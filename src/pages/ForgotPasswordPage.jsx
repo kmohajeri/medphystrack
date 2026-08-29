@@ -27,31 +27,31 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h1 className="text-center text-3xl font-bold text-gray-900">MedPhysTrack</h1>
+        <h1 className="text-center text-3xl font-bold text-slate-900">MedPhysTrack</h1>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-6 shadow rounded-lg sm:px-10">
-          <h2 className="mb-2 text-xl font-semibold text-gray-800">Reset your password</h2>
+          <h2 className="mb-2 text-xl font-semibold text-slate-800">Reset your password</h2>
 
           {submitted ? (
             <div className="mt-4">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-slate-600">
                 If an account exists for <strong>{email}</strong>, you'll receive a password
                 reset link shortly. Check your inbox (and spam folder).
               </p>
               <Link
                 to="/login"
-                className="mt-4 inline-block text-sm text-blue-600 hover:text-blue-500"
+                className="mt-4 inline-block text-sm text-indigo-600 hover:text-indigo-500"
               >
                 ← Back to sign in
               </Link>
             </div>
           ) : (
             <>
-              <p className="mb-6 text-sm text-gray-500">
+              <p className="mb-6 text-sm text-slate-500">
                 Enter your email address and we'll send you a link to reset your password.
               </p>
 
@@ -63,7 +63,7 @@ export default function ForgotPasswordPage() {
 
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">
                     Email address
                   </label>
                   <input
@@ -73,21 +73,21 @@ export default function ForgotPasswordPage() {
                     required
                     value={email}
                     onChange={e => setEmail(e.target.value)}
-                    className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="block w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {submitting ? 'Sending…' : 'Send reset link'}
                 </button>
               </form>
 
               <div className="mt-4">
-                <Link to="/login" className="text-sm text-blue-600 hover:text-blue-500">
+                <Link to="/login" className="text-sm text-indigo-600 hover:text-indigo-500">
                   ← Back to sign in
                 </Link>
               </div>

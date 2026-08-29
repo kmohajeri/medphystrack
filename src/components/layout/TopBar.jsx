@@ -32,11 +32,11 @@ export default function TopBar({ onMenuClick }) {
   const { profile, signOut } = useAuth()
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 flex-shrink-0 items-center justify-between border-b border-gray-200 bg-white px-4 lg:px-6">
+    <header className="sticky top-0 z-30 flex h-16 flex-shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 lg:px-6">
       {/* Left: hamburger (mobile) */}
       <button
         onClick={onMenuClick}
-        className="rounded-md p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700 lg:hidden"
+        className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700 lg:hidden"
         aria-label="Open menu"
       >
         <HamburgerIcon />
@@ -48,19 +48,19 @@ export default function TopBar({ onMenuClick }) {
       {/* Right: user + sign out */}
       <div className="flex items-center gap-3">
         {/* Avatar */}
-        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-semibold text-white">
+        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-indigo-600 text-xs font-semibold text-white">
           {initials(profile)}
         </div>
 
         {/* Name / email — hidden on very small screens */}
-        <span className="hidden sm:block text-sm font-medium text-gray-700 max-w-[180px] truncate">
+        <span className="hidden sm:block text-sm font-medium text-slate-700 max-w-[180px] truncate">
           {displayName(profile)}
         </span>
 
         {/* Sign out */}
         <button
           onClick={signOut}
-          className="flex items-center gap-1.5 rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+          className="flex items-center gap-1.5 rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
         >
           <SignOutIcon />
           <span className="hidden sm:inline">Sign out</span>

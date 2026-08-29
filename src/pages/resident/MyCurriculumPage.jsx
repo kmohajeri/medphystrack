@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import AppLayout from '../../components/layout/AppLayout';
+import Spinner from '../../components/Spinner';
 import {
   getMyCurriculum,
   updateTaskStatus,
@@ -181,7 +182,7 @@ export default function MyCurriculumPage() {
   if (loading) {
     return (
       <AppLayout>
-        <p className="text-sm text-slate-400">Loading curriculum…</p>
+        <Spinner />
       </AppLayout>
     );
   }

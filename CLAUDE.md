@@ -75,6 +75,7 @@ supabase/migrations/010_resident_portal.sql
 supabase/migrations/011_fix_program_admin_rls.sql
 supabase/migrations/012_minutes_files_storage.sql
 supabase/migrations/013_evaluation_files_rls_fix.sql
+supabase/migrations/014_archive_residents_applications.sql
 ```
 
 ### 3. Create the Storage buckets
@@ -288,7 +289,7 @@ review and customize the copied curriculum after a new program is provisioned.
 | Phase 9 | Handbook (Dynamic PDF) | 🔲 Not started |
 | Phase 10 | Billing & Multi-Tenancy | 🔲 Not started |
 | Phase 11 | Support & Notifications | 🔲 Not started |
-| Phase 12 | Polish & Launch Prep + Archive/Delete (Residents & Applications) | 🔲 Not started |
+| Phase 12 | Polish & Launch Prep + Archive/Delete (Residents & Applications) | 🔄 In Progress |
 
 ---
 
@@ -354,7 +355,7 @@ review and customize the copied curriculum after a new program is provisioned.
 **Known limitations / things not tested:**
 - File upload not automated — requires a real file and a browser file-picker dialog. The upload UI (file type selector + "Upload file" button) was visually confirmed to render. Requires the `application-files` Storage bucket to be created manually in Supabase dashboard (private, no size/MIME restrictions needed).
 - Resident records are created without a linked `auth.users` account — `user_id` is nullable for now. Linking a resident to a login account is deferred to Phase 6 (Resident Portal invite flow).
-- No delete for residents or applications — intentional for now. Soft archive/delete is scoped to Phase 12. In the meantime, setting a resident's status to `inactive` is the workaround for records added by mistake.
+- No delete for residents or applications — intentional for now. Archive/restore shipped in Phase 12 (2026-08-29).
 
 ---
 
@@ -446,22 +447,45 @@ review and customize the copied curriculum after a new program is provisioned.
 
 ---
 
+### Phase 12 — Archive/Restore (Residents & Applications) — built 2026-08-29
+
+**Method:** Code review + build check. No Playwright test written for this change.
+
+**What was built:**
+
+| Feature | Description |
+|---|---|
+| Residents archive | Active/Archived toggle in header; Archive button per row with `DeleteConfirmModal`; Restore button for archived rows; archived rows at 60% opacity |
+| Applications archive | "Archived" tab in status strip; Archive/Restore action in `ApplicationDetailModal` footer with inline confirm step |
+| Migration 014 | `archived_at timestamptz` on `residents` and `applications`; applied directly to dev project via Supabase MCP |
+| `DeleteConfirmModal` | Added `confirmLabel` / `loadingLabel` props for reuse beyond delete actions |
+
+**Known limitations:**
+- Not Playwright-tested — archive/restore flows should be manually verified before launch.
+- No bulk archive. One record at a time by design.
+- Archived residents with portal accounts retain their login — they just won't appear in admin lists. No auth account cleanup on archive (intentional: preserves audit trail).
+
+---
+
 ## Phase 12 Scope Notes
 
-In addition to general polish and launch prep, Phase 12 includes:
-
-### Archive / soft-delete for Residents and Applications
-Neither the Residents page nor the Applications page has a delete or archive action. This is intentional — deleting a resident who has curriculum assigned would cascade-delete all their `resident_modules` and `resident_tasks` records. The plan is a soft-delete/archive pattern consistent with how organizations and programs are handled (hidden from active lists, data preserved, restorable).
+### Archive / soft-delete for Residents and Applications — ✅ Complete (2026-08-29)
 
 **Residents:**
-- Add `archived_at` column to `residents` table (migration)
-- Add RLS/query filter to hide archived residents from normal list views
-- Add "Archive" action per row (with confirmation)
-- Add a toggle/tab to view archived residents
+- `archived_at timestamptz` added to `residents` (migration 014)
+- Active/Archived toggle in header — switches `listResidents` ↔ `listArchivedResidents`
+- "Archive" button per active row → `DeleteConfirmModal` (confirmLabel="Archive") → `archiveResident()`
+- "Restore" button per archived row → `restoreResident()`; archived rows shown at 60% opacity
 
 **Applications:**
-- Add `archived_at` column to `applications` table (migration)
-- Same filter/archive/restore pattern as residents
+- `archived_at timestamptz` added to `applications` (migration 014)
+- "Archived" tab added to status strip (All / Inquiry / Pending / Approved / Declined / Archived)
+- `listApplications` handles `status='archived'` as a special case (filters `archived_at IS NOT NULL`)
+- Archive/Restore action in `ApplicationDetailModal` footer with inline confirmation step
+
+### Remaining Phase 12 work
+- General polish and launch prep (UX, loading states, empty states, responsive)
+- Any other items identified before launch
 
 ---
 
@@ -553,6 +577,7 @@ Migration files: `supabase/migrations/`
 - `011_fix_program_admin_rls.sql` — security fix: adds `get_my_role() = 'program_admin'` guard to all 15 program_admin RLS policies that were missing it. Root cause: migration 010 started setting org_id on resident profiles, which caused residents to match program_admin policies and see/modify other residents' data
 - `012_minutes_files_storage.sql` — RLS policies on storage.objects for the minutes-files bucket (super_admin full access; program_admin scoped to own program via path segment [1] = program_id)
 - `013_evaluation_files_rls_fix.sql` — security fix: adds `get_my_role() = 'program_admin'` guard to evaluation_files program_admin SELECT and DELETE policies that were missing it (created in migration 005 without role check)
+- `014_archive_residents_applications.sql` — adds `archived_at timestamptz` to `residents` and `applications` tables (soft-delete/archive pattern)
 
 Status: Live in Supabase project fmwyajlsckmgjtclnypq
 
